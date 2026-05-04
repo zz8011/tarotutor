@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sparkles, BookOpen, Star, Compass, User } from 'lucide-react';
+import { Sparkles, BookOpen, Star, Compass, User, MoonStar, WandSparkles } from 'lucide-react';
+import BottomNav from '../components/BottomNav';
 import { useAppStore } from '../store/useAppStore';
 import { getDailyCardGuidance } from '../services/ai';
 import { getCardById } from '../data/tarotCards';
@@ -17,16 +18,15 @@ export default function HomePage() {
 
   // 抽取每日卡牌并获取 AI 指引
   const handleDrawDaily = async () => {
-    drawDailyCard();
+    const nextDailyCard = await drawDailyCard();
     
     // 获取 AI 解读
-    if (!dailyCard) return;
-    const card = getCardById(dailyCard.cardId);
+    const card = getCardById(nextDailyCard.cardId);
     if (!card) return;
     
     setIsLoadingGuidance(true);
     try {
-      const guidance = await getDailyCardGuidance(card, dailyCard.orientation as 'upright' | 'reversed');
+      const guidance = await getDailyCardGuidance(card, nextDailyCard.orientation);
       setDailyGuidance(guidance);
     } catch (error) {
       console.error('每日指引获取失败:', error);
@@ -45,42 +45,43 @@ export default function HomePage() {
         transition={{ duration: 0.6 }}
       >
         <div className="logo-section">
-          <div className="logo-icon">🔮</div>
+          <div className="logo-icon"><MoonStar size={26} /></div>
           <div>
             <h1 className="app-title text-gradient">AI 塔罗导师</h1>
-            <p className="app-subtitle">像与一位有智慧的老师对话一样学习塔罗</p>
+            <p className="app-subtitle">为微信小程序体验设计的塔罗学习空间</p>
           </div>
         </div>
         {userName && (
           <div className="user-greeting">
             <span>欢迎，{userName}</span>
-            <button className="profile-btn" onClick={() => navigate('/profile')}>
+            <button className="profile-btn" onClick={() => navigate('/profile')} aria-label="个人中心">
               <User size={20} />
             </button>
           </div>
         )}
       </motion.header>
 
-      {/* Quiz CTA - 性格测试引导 */}
-      {!hasCompletedQuiz && (
-        <motion.section
-          className="quiz-cta-section card-glass"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15, duration: 0.6 }}
-        >
-          <div className="quiz-cta-content">
-            <div className="quiz-cta-icon">🧭</div>
-            <div className="quiz-cta-text">
-              <h3>开启你的塔罗之旅</h3>
-              <p>完成性格测试，找到最适合你的AI导师</p>
-            </div>
-            <button className="btn-primary quiz-cta-btn" onClick={() => navigate('/quiz')}>
-              开始测试
-            </button>
+      {/* Quiz CTA - 性格测试引导，始终显示 */}
+      <motion.section
+        className="quiz-cta-section card-glass"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15, duration: 0.6 }}
+      >
+        <div className="section-kicker">
+          <WandSparkles size={14} />
+          PERSONAL MENTOR
+        </div>
+        <div className="quiz-cta-content">
+          <div className="quiz-cta-text">
+            <h3>{hasCompletedQuiz ? '重新探索' : '开启你的塔罗之旅'}</h3>
+            <p>{hasCompletedQuiz ? '已匹配导师：' + (primaryMentor || '') + '，点击重新测试或切换导师' : '完成性格测试，找到最适合你的AI导师'}</p>
           </div>
-        </motion.section>
-      )}
+          <button className="btn-primary quiz-cta-btn" onClick={() => navigate('/quiz')}>
+            {hasCompletedQuiz ? '重新测试' : '开始测试'}
+          </button>
+        </div>
+      </motion.section>
 
       {/* Daily Card Section */}
       <motion.section
@@ -95,7 +96,14 @@ export default function HomePage() {
         </div>
         {dailyCard ? (
           <div className="daily-card-display">
-            <div className="card-mini">{dailyCard.orientation === 'upright' ? '🃏' : '🃏'}</div>
+            <div className="card-mini">
+              <img
+                src={getCardById(dailyCard.cardId)?.image || '/cards/00-the-fool.jpg'}
+                alt={getCardById(dailyCard.cardId)?.chineseName || '塔罗牌'}
+                className="daily-card-img"
+                style={{ transform: dailyCard.orientation === 'reversed' ? 'rotate(180deg)' : 'none' }}
+              />
+            </div>
             <p className="card-status">今日已抽取 · 点击开始体验</p>
             
             {/* AI 每日指引 */}
@@ -123,8 +131,10 @@ export default function HomePage() {
             </button>
           </div>
         ) : (
-          <div className="daily-card-empty">
-            <div className="card-placeholder pulse-glow">🎴</div>
+        <div className="daily-card-empty">
+            <div className="card-placeholder pulse-glow">
+              <Sparkles size={38} />
+            </div>
             <p>今天的牌正在等待你...</p>
             <button className="btn-primary" onClick={handleDrawDaily}>
               <Sparkles size={18} />
@@ -143,22 +153,22 @@ export default function HomePage() {
       >
         <h3 className="section-title">快速入口</h3>
         <div className="action-grid">
-          <button className="action-card action-library" onClick={() => navigate('/library')}>
+          <button className="action-card action-library" onClick={() => navigate('/library')} aria-label="进入卡牌学习">
             <BookOpen size={28} />
             <span>卡牌学习</span>
             <small>78张塔罗牌完整解读</small>
           </button>
-          <button className="action-card action-spread" onClick={() => navigate('/spread')}>
+          <button className="action-card action-spread" onClick={() => navigate('/spread')} aria-label="进入牌阵练习">
             <Star size={28} />
             <span>牌阵练习</span>
             <small>经典牌阵模拟解读</small>
           </button>
-          <button className="action-card action-diary" onClick={() => navigate('/diary')}>
+          <button className="action-card action-diary" onClick={() => navigate('/diary')} aria-label="进入心灵图鉴">
             <Sparkles size={28} />
             <span>心灵图鉴</span>
             <small>记录你的塔罗成长</small>
           </button>
-          <button className="action-card action-mentors" onClick={() => navigate('/mentors')}>
+          <button className="action-card action-mentors" onClick={() => navigate('/mentors')} aria-label="查看导师全览">
             <Compass size={28} />
             <span>导师全览</span>
             <small>查看所有AI导师</small>
@@ -201,25 +211,7 @@ export default function HomePage() {
         </motion.section>
       )}
 
-      {/* Bottom Nav */}
-      <nav className="bottom-nav">
-        <button className="nav-item active" onClick={() => navigate('/')}>
-          <Sparkles size={22} />
-          <span>首页</span>
-        </button>
-        <button className="nav-item" onClick={() => navigate('/library')}>
-          <BookOpen size={22} />
-          <span>百科</span>
-        </button>
-        <button className="nav-item" onClick={() => navigate('/spread')}>
-          <Star size={22} />
-          <span>牌阵</span>
-        </button>
-        <button className="nav-item" onClick={() => navigate('/profile')}>
-          <User size={22} />
-          <span>我的</span>
-        </button>
-      </nav>
+      <BottomNav />
     </div>
   );
 }

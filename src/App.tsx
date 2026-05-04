@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import ErrorBoundary from './components/ErrorBoundary';
 import './styles/global.scss';
@@ -23,7 +23,7 @@ function Loading() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <ErrorBoundary>
         <Suspense fallback={<Loading />}>
           <Routes>
@@ -39,6 +39,6 @@ export default function App() {
           </Routes>
         </Suspense>
       </ErrorBoundary>
-    </BrowserRouter>
+    </HashRouter>
   );
 }

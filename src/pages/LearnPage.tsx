@@ -1,8 +1,8 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Send, BookOpen, Unlock, Sparkles } from 'lucide-react';
+import { ArrowLeft, Send, BookOpen, Sparkles } from 'lucide-react';
 import { getCardById, getRandomCard } from '../data/tarotCards';
 import { getMentorById } from '../data/mentors';
 import { useAppStore } from '../store/useAppStore';
@@ -13,125 +13,153 @@ import './LearnPage.scss';
 export default function LearnPage() {
   const { cardId } = useParams<{ cardId?: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { currentSession, startSession, addMessage, endSession, primaryMentor, completeCard, updateProgress } = useAppStore();
   
   const [inputMessage, setInputMessage] = useState('');
-  const [phase, setPhase] = useState<'showing' | 'feeling' | 'dialogue' | 'knowledge' | 'closing' | 'interpretation'>('showing');
-  const [showDirectInterpretation, setShowDirectInterpretation] = useState(false);
+  const [phase, setPhase] = useState<'showing' | 'feeling' | 'dialogue' | 'knowledge' | 'closing'>('showing');
   const [knowledgeUnlocked, setKnowledgeUnlocked] = useState(false);
   const [isAiTyping, setIsAiTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // 惰性初始化 orientation，避免渲染期间调用 Math.random()（React purity 规则）
-  const [orientation] = useState<'upright' | 'reversed'>(() =>
-    Math.random() > 0.5 ? 'upright' : 'reversed'
-  );
 
   const cardIdNum = cardId ? parseInt(cardId) : null;
   const card = cardIdNum ? getCardById(cardIdNum) : getRandomCard();
   const mentor = getMentorById(primaryMentor || 'luna');
 
-  // AI 生成初始问候或直接解读
-  const generateAiGreeting = useCallback(async () => {
-    if (!card) return;
+  // 单张学习固定正位，不显示逆位
+  const orientation: 'upright' = 'upright';
 
-    // 如果是直接解读模式（从首页"开始体验"进入），直接显示牌意
-    const isDirectInterpretation = window.location.search.includes('mode=interpret');
+  // 生成初始问候话术
+  const generateGreeting = useCallback(() => {
+    if (!card || !mentor) return;
+
+    const isDirectMode = searchParams.get('mode') === 'interpret';
     
-    if (isDirectInterpretation) {
-      setShowDirectInterpretation(true);
-      setPhase('interpretation');
+    let content = '';
+    
+    if (isDirectMode) {
+      // 直接解读模式：简洁展示牌意
+      content = `${card.chineseName}（${card.name}）
+
+${card.uprightMeaning}
+
+关键词：${card.keywords?.join('、') || '暂无'}
+元素：${card.element || '无'} | 行星：${card.planet || '暂无'}
+
+想深入了解这张牌，还是聊聊你的感受？`;
+      setPhase('knowledge');
       setKnowledgeUnlocked(true);
-      
-      // 直接显示牌意，不需要AI生成
-      const directContent = `**${card.chineseName}**（${orientation === 'upright' ? '正位' : '逆位'}）
-
-${orientation === 'upright' ? card.uprightMeaning : card.reversedMeaning}
-
-**关键词**：${card.keywords?.join('、') || '暂无'}
-
-**元素**：${card.element || '无'} | **行星**：${card.planet || '暂无'}
-
-你想深入了解这张牌的更多含义，还是与AI导师探讨你的感受？`;
-
-      const greeting: ChatMessage = {
-        id: Date.now().toString(),
-        role: 'mentor',
-        content: directContent,
-        timestamp: new Date().toISOString(),
-        phase: 'perception',
-        mentorId: primaryMentor || 'luna',
+    } else {
+      // 标准学习模式：引导用户表达感受
+      const greetings: Record<string, string> = {
+        luna: `这是${card.chineseName}。看着这张牌，你第一眼感受到什么？不用想太多，说出你的直觉。`,
+        sol: `今天我们来认识${card.chineseName}。观察牌面，什么元素最吸引你？`,
+        mira: `欢迎来到${card.chineseName}的世界。如果这张牌是一个人，你觉得TA是什么性格？`,
+        orion: `这是${card.chineseName}。牌面上最让你好奇的细节是什么？`,
+        seren: `${card.chineseName}出现在你面前。此刻，这张牌带给你什么情绪？`,
+        kai: `看看${card.chineseName}。如果这张牌在给你讲故事，开头会是什么？`,
       };
-      addMessage(greeting);
-      setIsAiTyping(false);
-      return;
+      content = greetings[mentor.id] || greetings.luna;
     }
 
-    const chatHistory: ChatMessage[] = [];
-    const userMessage = '你好，我今天想学习这张牌';
+    const greeting: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'mentor',
+      content,
+      timestamp: new Date().toISOString(),
+      phase: 'perception',
+      mentorId: mentor.id,
+    };
+    addMessage(greeting);
+    setIsAiTyping(false);
+  }, [card, mentor, searchParams, addMessage]);
 
-    try {
-      const stream = streamCardLearningResponse(
-        card,
-        orientation,
-        userMessage,
-        chatHistory,
-        primaryMentor || 'luna'
-      );
-
-      let fullContent = '';
-      for await (const chunk of stream) {
-        fullContent += chunk;
-      }
-
-      const greeting: ChatMessage = {
-        id: Date.now().toString(),
-        role: 'mentor',
-        content: fullContent || `今天让我带你探索${card.chineseName}的智慧。看到这张牌，你第一眼想到什么？`,
-        timestamp: new Date().toISOString(),
-        phase: 'perception',
-        mentorId: primaryMentor || 'luna',
-      };
-      addMessage(greeting);
-    } catch (error) {
-      console.error('AI 问候生成失败:', error);
-      // 降级到本地生成
-      const fallbackGreeting: ChatMessage = {
-        id: Date.now().toString(),
-        role: 'mentor',
-        content: `今天让我带你探索${card.chineseName}的智慧。看到这张牌，你第一眼想到什么？`,
-        timestamp: new Date().toISOString(),
-        phase: 'perception',
-        mentorId: primaryMentor || 'luna',
-      };
-      addMessage(fallbackGreeting);
-    } finally {
-      setIsAiTyping(false);
-    }
-  }, [card, orientation, primaryMentor, addMessage]);
-
-  // 初始化学习会话：先创建 session，再异步生成问候
-  useEffect(() => {
-    if (!currentSession && card) {
-      startSession(card.id, primaryMentor || 'luna');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅在首次挂载时初始化
-  }, []);
-
-  // session 创建后异步生成 AI 问候（避免 effect 中同步 setState）
+  // 当 cardId 改变时，完全重置状态
+  const prevCardIdRef = useRef<number | null>(null);
   const hasGreeted = useRef(false);
+  
+  useEffect(() => {
+    if (cardIdNum !== prevCardIdRef.current) {
+      prevCardIdRef.current = cardIdNum;
+      hasGreeted.current = false;
+      
+      // 强制清理旧会话和所有消息
+      if (currentSession) {
+        endSession();
+      }
+      
+      // 重置所有本地状态
+      setPhase('showing');
+      setKnowledgeUnlocked(false);
+      setInputMessage('');
+      setIsAiTyping(false);
+      
+      // 创建新会话
+      if (card) {
+        startSession(card.id, primaryMentor || 'luna');
+      }
+    }
+  }, [cardIdNum, card, currentSession, endSession, startSession, primaryMentor]);
+
+  // 会话创建后发送问候
   useEffect(() => {
     if (currentSession && !hasGreeted.current && card) {
       hasGreeted.current = true;
       setIsAiTyping(true);
-      generateAiGreeting();
+      // 短暂延迟让loading状态可见
+      setTimeout(() => generateGreeting(), 300);
     }
-  }, [currentSession, card, generateAiGreeting]);
+  }, [currentSession, card, generateGreeting]);
 
-  // 自动滚动到底部
+  // 自动滚动
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [currentSession?.messages, isAiTyping]);
+
+  // 生成AI回复话术
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const generateResponse = useCallback((_userInput: string) => {
+    if (!card || !mentor) return '';
+    
+    const responses: Record<string, string[]> = {
+      luna: [
+        `你的感受很珍贵。${card.chineseName}正位的核心含义是：${card.uprightMeaning.substring(0, 60)}...`,
+        `我听到了。这张牌的关键词是${card.keywords?.slice(0, 3).join('、')}，它们和你感受到的有共鸣吗？`,
+        `很好的觉察。${card.chineseName}提醒我们：${card.uprightMeaning.substring(0, 50)}... 你在生活中有过类似的体验吗？`,
+      ],
+      sol: [
+        `观察得很细致。${card.chineseName}正位代表：${card.uprightMeaning.substring(0, 60)}...`,
+        `没错。这张牌的核心能量是${card.keywords?.[0]}，它在你当下的生活中如何体现？`,
+        `正是如此。${card.chineseName}告诉我们：${card.uprightMeaning.substring(0, 50)}...`,
+      ],
+      mira: [
+        `很有趣的联想！${card.chineseName}正位的含义正是：${card.uprightMeaning.substring(0, 60)}...`,
+        `你的直觉很准。这张牌和${card.element || '未知'}元素相关，象征着${card.keywords?.[0]}。`,
+        `很好的解读角度。${card.chineseName}的核心信息是：${card.uprightMeaning.substring(0, 50)}...`,
+      ],
+      orion: [
+        `敏锐的观察。${card.chineseName}正位含义：${card.uprightMeaning.substring(0, 60)}...`,
+        `这个细节很重要。${card.chineseName}与${card.planet || '未知'}相关，代表${card.keywords?.[0]}。`,
+        `深入得很好。这张牌的核心是：${card.uprightMeaning.substring(0, 50)}...`,
+      ],
+      seren: [
+        `我感受到了你的情绪。${card.chineseName}正位含义：${card.uprightMeaning.substring(0, 60)}...`,
+        `这种情绪很正常。${card.chineseName}提醒我们接纳${card.keywords?.[0]}。`,
+        `你的感受就是答案的一部分。${card.chineseName}的核心：${card.uprightMeaning.substring(0, 50)}...`,
+      ],
+      kai: [
+        `很有创意的解读！${card.chineseName}正位含义：${card.uprightMeaning.substring(0, 60)}...`,
+        `这个故事的下一章可能是：${card.keywords?.slice(0, 2).join('、')}。`,
+        `想象力很棒。${card.chineseName}的核心信息：${card.uprightMeaning.substring(0, 50)}...`,
+      ],
+    };
+    
+    const mentorResponses = responses[mentor.id] || responses.luna;
+    // 根据消息长度选择不同回复
+    const msgLength = currentSession?.messages?.length || 0;
+    const index = Math.min(msgLength / 2, mentorResponses.length - 1);
+    return mentorResponses[Math.floor(index)];
+  }, [card, mentor, currentSession?.messages?.length]);
 
   const handleSend = async () => {
     if (!inputMessage.trim() || !card) return;
@@ -147,18 +175,19 @@ ${orientation === 'upright' ? card.uprightMeaning : card.reversedMeaning}
     addMessage(userMsg);
     setInputMessage('');
 
-    // Progress phase
-    if (phase === 'showing') {
+    // 阶段推进
+    const msgCount = (currentSession?.messages?.length || 0) + 1;
+    if (msgCount <= 2) {
       setPhase('feeling');
-    } else if (phase === 'feeling' && (currentSession?.messages?.length || 0) > 3) {
+    } else if (msgCount <= 4) {
       setPhase('dialogue');
-    } else if (phase === 'dialogue' && (currentSession?.messages?.length || 0) > 6) {
+    } else {
       setPhase('knowledge');
       setKnowledgeUnlocked(true);
       completeCard(cardIdNum || card.id);
     }
 
-    // AI 生成导师回复（流式）
+    // AI回复
     setIsAiTyping(true);
     
     try {
@@ -171,7 +200,6 @@ ${orientation === 'upright' ? card.uprightMeaning : card.reversedMeaning}
         primaryMentor || 'luna'
       );
 
-      // 先创建一条空消息，然后流式填充
       const responseId = (Date.now() + 1).toString();
       const tempResponse: ChatMessage = {
         id: responseId,
@@ -186,29 +214,24 @@ ${orientation === 'upright' ? card.uprightMeaning : card.reversedMeaning}
       let fullContent = '';
       for await (const chunk of stream) {
         fullContent += chunk;
-        // 更新消息内容（通过替换最后一条消息）
-        const updatedMessages = [...(currentSession?.messages || [])];
-        const lastIndex = updatedMessages.length - 1;
-        if (lastIndex >= 0 && updatedMessages[lastIndex].id === responseId) {
-          updatedMessages[lastIndex] = {
-            ...updatedMessages[lastIndex],
-            content: fullContent,
-          };
-          // 直接修改 store 中的消息
-          useAppStore.setState((state) => ({
-            currentSession: state.currentSession
-              ? { ...state.currentSession, messages: updatedMessages }
-              : null,
-          }));
-        }
+        // 通过 getState() 获取最新状态，避免闭包捕获过期引用
+        useAppStore.setState((state) => {
+          if (!state.currentSession) return state;
+          const msgs = [...state.currentSession.messages];
+          const lastIdx = msgs.length - 1;
+          if (lastIdx >= 0 && msgs[lastIdx].id === responseId) {
+            msgs[lastIdx] = { ...msgs[lastIdx], content: fullContent };
+          }
+          return { currentSession: { ...state.currentSession, messages: msgs } };
+        });
       }
     } catch (error) {
-      console.error('AI 回复生成失败:', error);
-      // 降级：添加错误提示
+      // 降级到本地话术
+      const fallbackContent = generateResponse(inputMessage);
       const fallbackResponse: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'mentor',
-        content: '抱歉，我暂时无法连接智慧之源。请稍后再试，或者继续探索这张牌的含义...',
+        content: fallbackContent || '你的感受很重要。继续说说看？',
         timestamp: new Date().toISOString(),
         phase: phase as 'perception' | 'understanding' | 'application' | 'mastery',
         mentorId: primaryMentor || 'luna',
@@ -235,33 +258,39 @@ ${orientation === 'upright' ? card.uprightMeaning : card.reversedMeaning}
         </button>
         <div className="learn-meta">
           <span className="mentor-badge">{mentor?.avatarEmoji} {mentor?.chineseName}</span>
-          <span className="phase-badge">{phase === 'showing' ? '展示' : phase === 'feeling' ? '感受' : phase === 'dialogue' ? '对话' : '知识'}</span>
+          <span className="phase-badge">{phase === 'showing' ? '初识' : phase === 'feeling' ? '感受' : phase === 'dialogue' ? '探索' : '领悟'}</span>
         </div>
       </div>
 
-      {/* Card Display */}
+      {/* Card Display - 固定正位 */}
       <motion.div
         className="card-display"
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6 }}
       >
-        <div className={`tarot-card ${orientation}`}>
+        <div className="tarot-card upright">
           <div className="card-inner">
             <div className="card-front">
-              <div className="card-symbol">{card.imageSymbol}</div>
+              <div className="card-image-wrapper">
+                <img
+                  src={card.image}
+                  alt={card.chineseName}
+                  className="card-image"
+                  loading="eager"
+                />
+              </div>
               <h3>{card.chineseName}</h3>
               <p className="card-name-en">{card.name}</p>
               <div className="card-meta">
                 <span>{card.arcana === 'major' ? '大阿卡纳' : card.suit}</span>
-                <span className="orientation">{orientation === 'upright' ? '正位' : '逆位'}</span>
               </div>
             </div>
           </div>
         </div>
       </motion.div>
 
-      {/* Knowledge Card (unlocked after dialogue) */}
+      {/* Knowledge Card */}
       <AnimatePresence>
         {knowledgeUnlocked && (
           <motion.div
@@ -271,13 +300,13 @@ ${orientation === 'upright' ? card.uprightMeaning : card.reversedMeaning}
             exit={{ opacity: 0 }}
           >
             <div className="knowledge-header">
-              <Unlock size={18} />
+              <Sparkles size={18} />
               <span>知识卡牌已解锁</span>
             </div>
             <div className="knowledge-content">
               <p className="meaning">
-                <strong>{orientation === 'upright' ? '正位含义：' : '逆位含义：'}</strong>
-                {orientation === 'upright' ? card.uprightMeaning : card.reversedMeaning}
+                <strong>核心含义：</strong>
+                {card.uprightMeaning}
               </p>
               <div className="keywords">
                 {card.keywords.map((k) => (
@@ -312,7 +341,7 @@ ${orientation === 'upright' ? card.uprightMeaning : card.reversedMeaning}
           </motion.div>
         ))}
         
-        {/* AI 输入指示器 */}
+        {/* AI typing indicator */}
         {isAiTyping && (
           <motion.div
             className="message mentor typing"
@@ -338,8 +367,8 @@ ${orientation === 'upright' ? card.uprightMeaning : card.reversedMeaning}
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-            placeholder={phase === 'showing' ? '写下你看到牌的第一感受...' : '继续与导师对话...'}
-            aria-label={phase === 'showing' ? '写下你看到牌的第一感受' : '继续与导师对话'}
+            placeholder={phase === 'showing' ? '说说你对这张牌的第一感受...' : '继续和导师聊聊...'}
+            aria-label={phase === 'showing' ? '输入你对这张牌的感受' : '继续对话'}
             className="chat-input"
           />
           <button className="send-btn" aria-label="发送" onClick={handleSend}>
@@ -354,7 +383,7 @@ ${orientation === 'upright' ? card.uprightMeaning : card.reversedMeaning}
           </button>
         )}
       </div>
-          <BottomNav />
+      <BottomNav />
     </div>
   );
 }

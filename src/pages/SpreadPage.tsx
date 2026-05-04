@@ -7,6 +7,7 @@ import { spreads } from '../data/spreads';
 import { getRandomCard, getCardById } from '../data/tarotCards';
 import { useAppStore } from '../store/useAppStore';
 import { getSpreadInterpretation } from '../services/ai';
+import { showToast } from '../platform/feedback';
 import type { CardSpread, SpreadCard } from '../types';
 import './SpreadPage.scss';
 
@@ -20,7 +21,7 @@ export default function SpreadPage() {
   const [interpretation, setInterpretation] = useState('');
   const [isInterpreting, setIsInterpreting] = useState(false);
   const [userQuestion, setUserQuestion] = useState('');
-  const [showQuestionInput, setShowQuestionInput] = useState(false);
+  const [showQuestionInput] = useState(true);
   const [userFeeling, setUserFeeling] = useState('');
   const [showFeelingInput, setShowFeelingInput] = useState(false);
   const [hasSubmittedFeeling, setHasSubmittedFeeling] = useState(false);
@@ -28,7 +29,7 @@ export default function SpreadPage() {
   const handleDraw = () => {
     // 验证问题已填写
     if (!userQuestion.trim()) {
-      alert('请先写下你心中想问的问题');
+      showToast('请先写下你心中想问的问题');
       return;
     }
     
@@ -85,7 +86,7 @@ export default function SpreadPage() {
     
     // 验证感受已填写
     if (!userFeeling.trim()) {
-      alert('请先写下你对这个牌阵的第一感受');
+      showToast('请先写下你对这个牌阵的第一感受');
       return;
     }
     
@@ -115,7 +116,7 @@ export default function SpreadPage() {
       );
       
       // 添加一句话总结
-      const summary = `\n\n💫 **一句话总结**：${userQuestion}——这个牌阵提醒你，${result.includes('建议') ? '信任自己的直觉，你已经有答案了' : '保持开放的心态，变化正在发生'}。`;
+      const summary = `\n\n💫 一句话总结：${userQuestion}——这个牌阵提醒你，${result.includes('建议') ? '信任自己的直觉，你已经有答案了' : '保持开放的心态，变化正在发生'}。`;
       
       setInterpretation(result + summary);
       setHasSubmittedFeeling(true);
@@ -244,7 +245,15 @@ export default function SpreadPage() {
                   transition={{ delay: index * 0.3 }}
                 >
                   <div className="card-position">{position?.label}</div>
-                  <div className="card-symbol">{card.imageSymbol}</div>
+                  <div className="card-image-wrapper">
+                    <img
+                      src={card.image}
+                      alt={card.chineseName}
+                      className="card-image"
+                      style={{ transform: drawn.orientation === 'reversed' ? 'rotate(180deg)' : 'none' }}
+                      loading="lazy"
+                    />
+                  </div>
                   <div className="card-name">{card.chineseName}</div>
                   <div className="card-orientation">
                     {drawn.orientation === 'upright' ? '正位' : '逆位'}

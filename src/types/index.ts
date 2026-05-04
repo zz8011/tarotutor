@@ -27,6 +27,8 @@ export interface TarotCard {
   planet: string;
   description: string;
   imageSymbol: string;
+  /** 牌面图片路径 (相对于 public/cards/) */
+  image: string;
   numerology: string;
 }
 

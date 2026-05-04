@@ -126,9 +126,10 @@ export default function QuizPage() {
               <span className="option-text">{option.text}</span>
             </motion.button>
           ))}
-              <BottomNav />
-    </div>
+        </div>
       </motion.div>
+
+      <BottomNav />
 
       {currentIndex > 0 && (
         <button className="btn-secondary prev-btn" onClick={handlePrev}>

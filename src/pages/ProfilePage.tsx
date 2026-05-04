@@ -1,5 +1,6 @@
 import BottomNav from '../components/BottomNav';
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, BookOpen, Award, Sparkles } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
@@ -10,6 +11,15 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   const { userName, progress, primaryMentor, setUserName } = useAppStore();
   const mentor = getMentorById(primaryMentor || 'luna');
+  const [draftName, setDraftName] = useState(userName);
+  const [isEditingName, setIsEditingName] = useState(!userName);
+
+  const handleSaveName = () => {
+    const trimmedName = draftName.trim();
+    if (!trimmedName) return;
+    setUserName(trimmedName);
+    setIsEditingName(false);
+  };
 
   return (
     <div className="profile-page page-container">
@@ -33,15 +43,21 @@ export default function ProfilePage() {
           <h2>{userName || '未命名学员'}</h2>
           <p>{mentor?.chineseName} 的学徒</p>
         </div>
-        {!userName && (
-          <button
-            className="btn-secondary"
-            onClick={() => {
-              const name = prompt('请输入你的名字');
-              if (name) setUserName(name);
-            }}
-          >
-            设置名字
+        {isEditingName ? (
+          <div className="name-editor">
+            <input
+              value={draftName}
+              onChange={(event) => setDraftName(event.target.value)}
+              placeholder="输入名字"
+              aria-label="输入名字"
+            />
+            <button className="btn-secondary" onClick={handleSaveName}>
+              保存
+            </button>
+          </div>
+        ) : (
+          <button className="btn-secondary" onClick={() => setIsEditingName(true)}>
+            修改名字
           </button>
         )}
       </motion.div>

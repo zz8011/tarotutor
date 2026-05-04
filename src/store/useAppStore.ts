@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { UserProgress, LearningSession, ChatMessage, DiaryEntry, Achievement, CardSpread } from '../types';
+import { appStorage } from '../platform/storage';
 
 interface AppState {
   userName: string;
@@ -18,7 +19,7 @@ interface AppState {
   endSession: () => void;
 
   dailyCard: { cardId: number; date: string; orientation: string } | null;
-  drawDailyCard: () => void;
+  drawDailyCard: () => Promise<{ cardId: number; date: string; orientation: 'upright' | 'reversed' }>;
 
   personalityType: string | null;
   setPersonalityType: (type: string) => void;
@@ -111,9 +112,7 @@ export const useAppStore = create<AppState>()(
         })),
       endSession: () =>
         set((state) => ({
-          currentSession: state.currentSession
-            ? { ...state.currentSession, endedAt: new Date().toISOString() }
-            : null,
+          currentSession: null,
           progress: {
             ...state.progress,
             totalSessions: state.progress.totalSessions + 1,
@@ -125,11 +124,13 @@ export const useAppStore = create<AppState>()(
       drawDailyCard: async () => {
         const { getRandomCard } = await import('../data/tarotCards');
         const card = getRandomCard();
-        const orientation = Math.random() > 0.5 ? 'upright' : 'reversed';
+        const orientation = (Math.random() > 0.5 ? 'upright' : 'reversed') as 'upright' | 'reversed';
         const today = new Date().toISOString().split('T')[0];
+        const dailyCard = { cardId: card.id, date: today, orientation };
         set({
-          dailyCard: { cardId: card.id, date: today, orientation: orientation as 'upright' | 'reversed' },
+          dailyCard,
         });
+        return dailyCard;
       },
 
       personalityType: null,
@@ -145,6 +146,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'tarot-tutor-storage',
+      storage: appStorage,
       partialize: (state) => ({
         userName: state.userName,
         progress: state.progress,

@@ -3,24 +3,37 @@ import { mentors } from '../data/mentors';
 import { getCardById } from '../data/tarotCards';
 
 // ============================================================
-// AI 服务配置 — 读取 Hermes 配置的模型
+// AI 服务配置
 // ============================================================
 
-// 可用的模型配置（与 Hermes config.yaml 对应）
+// AI 配置
+
+// 云函数端点配置
+const CLOUD_FUNCTIONS = {
+  wechat: {
+    chat: 'tarot-chat',
+    streamChat: 'tarot-stream',
+    dailyCard: 'tarot-daily',
+    spread: 'tarot-spread',
+    welcome: 'tarot-welcome',
+  },
+  dev: {
+    baseURL: import.meta.env.VITE_API_PROXY_URL || 'http://localhost:3001',
+  },
+};
+
+// 兼容旧版直接 API 配置（仅开发环境应急使用）
 const AI_CONFIG = {
-  // 主模型：DeepSeek（用户配置，可用）
   primary: {
     baseURL: 'https://api.deepseek.com/v1',
     model: 'deepseek-chat',
     apiKeyEnv: 'DEEPSEEK_API_KEY',
   },
-  // 备用1：GLM-5.1（Z.AI）
   fallback1: {
     baseURL: 'https://api.z.ai/api/paas/v4',
     model: 'glm-5.1',
     apiKeyEnv: 'GLM_API_KEY',
   },
-  // 备用2：Kimi k2.6（Coding Agent 专用，普通 API 不可用）
   fallback2: {
     baseURL: 'https://api.kimi.com/coding/v1',
     model: 'kimi-k2.6',
@@ -28,20 +41,13 @@ const AI_CONFIG = {
   },
 };
 
-// 从环境变量读取 API Key
-// Vite: 以 VITE_ 开头的变量可在前端访问
-// 生产环境建议通过后端代理，避免前端暴露 Key
 function getApiKey(config: typeof AI_CONFIG.primary): string {
-  // 优先读取 Vite 环境变量 (VITE_XXX)
   const viteKey = import.meta.env[`VITE_${config.apiKeyEnv}`];
   if (viteKey) return viteKey as string;
-
-  // 兼容旧版 window.__HERMES_ENV__ 注入
   if (typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).__HERMES_ENV__) {
     const env = (window as unknown as Record<string, unknown>).__HERMES_ENV__ as Record<string, string>;
     return env?.[config.apiKeyEnv] || '';
   }
-
   return '';
 }
 
@@ -68,6 +74,62 @@ interface ChatCompletionResponse {
 }
 
 // ============================================================
+// 云函数代理调用封装
+// ============================================================
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+declare const wx: any | undefined;
+
+const isWechat = typeof wx !== 'undefined' && typeof wx.request === 'function';
+const isDev = import.meta.env.DEV;
+
+/**
+ * 通用云函数调用封装
+ */
+async function callCloudProxy(
+  name: string,
+  messages: { role: string; content: string }[],
+  options: { temperature?: number; maxTokens?: number; model?: string }
+): Promise<string> {
+  // 微信小程序环境
+  if (isWechat) {
+    return new Promise((resolve, reject) => {
+      wx.cloud.callFunction({
+        name,
+        data: { messages, ...options },
+        success: (res: unknown) => {
+          const result = res as { result?: { result?: string; error?: string } };
+          if (result.result?.error) {
+            reject(new Error(result.result.error));
+          } else {
+            resolve(result.result?.result || '');
+          }
+        },
+        fail: (err: unknown) => reject(err),
+      });
+    });
+  }
+
+  // 开发环境：HTTP 请求到本地代理
+  const baseURL = CLOUD_FUNCTIONS.dev.baseURL;
+  const response = await fetch(`${baseURL}/api/${name}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages, ...options }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`代理请求失败: ${response.status}`);
+  }
+
+  const data = await response.json() as { result?: string; error?: string };
+  if (data.error) {
+    throw new Error(data.error);
+  }
+  return data.result || '';
+}
+
+// ============================================================
 // 核心 AI 调用方法
 // ============================================================
 
@@ -88,7 +150,12 @@ export async function chatCompletion(
   const config = AI_CONFIG[model];
   const apiKey = getApiKey(config);
 
-  // 如果没有 API Key，返回模拟响应（开发模式）
+  // 优先使用云函数代理（生产环境）
+  if (!isDev || isWechat) {
+    return callCloudProxy('tarot-chat', messages, { temperature, maxTokens, model });
+  }
+
+  // 开发环境直连（应急回退）
   if (!apiKey) {
     console.warn('[AI Service] 未配置 API Key，使用模拟响应');
     return mockResponse(messages);
@@ -156,13 +223,13 @@ export async function* streamChatCompletion(
   } = {}
 ): AsyncGenerator<string, void, unknown> {
   const { temperature = 0.7, maxTokens = 2048, model = 'primary' } = options;
+
   const config = AI_CONFIG[model];
   const apiKey = getApiKey(config);
 
   if (!apiKey) {
-    console.warn('[AI Service] 未配置 API Key，使用模拟流式响应');
-    const mockText = mockResponse(messages);
-    // 模拟流式输出
+    console.warn('[AI Service] 未配置 API Key，使用模拟响应');
+    const mockText = await mockResponse(messages);
     const chunks = mockText.split(/(?<=。)|(?<=！)|(?<=？)|(?<=\n)/);
     for (const chunk of chunks) {
       if (chunk) {
@@ -344,7 +411,8 @@ export function buildSpreadInterpretationPrompt(
 1. 每张牌在其位置上的含义
 2. 牌与牌之间的关联和故事线
 3. 综合建议和行动指引
-4. 保持温暖鼓励的语气，不要太宿命论`;
+4. 保持温暖鼓励的语气，不要太宿命论
+5. 最后给出一个简短有力的一句话总结，点出核心启示`;
 
   return [
     { role: 'system', content: systemPrompt },
@@ -413,9 +481,9 @@ function mockResponse(messages: { role: string; content: string }[]): string {
 
 这张牌出现在你的今日指引中，意味着宇宙正在向你传递一个重要的信息。它提醒你关注当下的内在状态，倾听直觉的声音。
 
-**今日建议**：花 10 分钟静坐，回想最近让你感到兴奋或不安的事情，这张牌的能量会帮助你找到答案。
+今日建议：花 10 分钟静坐，回想最近让你感到兴奋或不安的事情，这张牌的能量会帮助你找到答案。
 
-**小行动**：今天遇到选择时，先深呼吸三次，再做决定。
+小行动：今天遇到选择时，先深呼吸三次，再做决定。
 
 愿你拥有充满觉察的一天 🌙`;
   }
@@ -425,9 +493,9 @@ function mockResponse(messages: { role: string; content: string }[]): string {
 
 第一张牌代表你当前的状态，显示你正处于一个转变的节点。第二张牌揭示了潜在的挑战，但这正是成长的机会。第三张牌指向未来的可能性，只要你保持开放的心态。
 
-**牌阵之间的关联**：从过去到现在的能量流动非常清晰，建议你专注于当下的行动，而不是过度担忧结果。
+牌阵之间的关联：从过去到现在的能量流动非常清晰，建议你专注于当下的行动，而不是过度担忧结果。
 
-**综合建议**：信任自己的直觉，你已经有答案了。今天适合做一些创造性的活动，让能量自然流动。
+综合建议：信任自己的直觉，你已经有答案了。今天适合做一些创造性的活动，让能量自然流动。
 
 记住，塔罗是指引而非预言，你始终拥有选择的自由 ✨`;
   }
@@ -435,11 +503,11 @@ function mockResponse(messages: { role: string; content: string }[]): string {
   if (lastMessage.includes('学习')) {
     return `🌟 这是一个很好的学习时刻！
 
-这张牌的核心信息是关于**内在平衡**。当你在学习塔罗时，不仅要记住牌意，更要感受牌面传递的能量。
+这张牌的核心信息是关于内在平衡。当你在学习塔罗时，不仅要记住牌意，更要感受牌面传递的能量。
 
-**深入理解**：注意观察牌中的色彩、人物姿态和符号细节。每个元素都在讲述一个故事。
+深入理解：注意观察牌中的色彩、人物姿态和符号细节。每个元素都在讲述一个故事。
 
-**实践建议**：今天试着用这张牌为一位朋友做简单的单牌解读，实践是最好的老师。
+实践建议：今天试着用这张牌为一位朋友做简单的单牌解读，实践是最好的老师。
 
 你最近有遇到什么让你联想到这张牌的事情吗？ 🤔`;
   }
@@ -448,9 +516,9 @@ function mockResponse(messages: { role: string; content: string }[]): string {
 
 这是一个值得深入探索的话题。塔罗牌不仅仅是符号和意义的组合，更是你内在智慧的镜子。
 
-**核心洞察**：你当前所处的阶段，正是这张牌能量最强的时候。它邀请你以新的视角看待眼前的情境。
+核心洞察：你当前所处的阶段，正是这张牌能量最强的时候。它邀请你以新的视角看待眼前的情境。
 
-**下一步**：试着把这张牌放在床头，睡前回想它的意象，看看梦境会带给你什么启示。
+下一步：试着把这张牌放在床头，睡前回想它的意象，看看梦境会带给你什么启示。
 
 有什么特别想深入探讨的吗？ ✨`;
 }

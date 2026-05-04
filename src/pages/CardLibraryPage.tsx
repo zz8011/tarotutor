@@ -46,6 +46,8 @@ export default function CardLibraryPage() {
             key={f}
             className={`filter-tab ${filter === f ? 'active' : ''}`}
             onClick={() => setFilter(f)}
+            aria-label={`筛选${f === 'all' ? '全部' : f === 'major' ? '大阿卡纳' : '小阿卡纳'}卡牌`}
+            aria-pressed={filter === f}
           >
             {f === 'all' ? '全部' : f === 'major' ? '大阿卡纳' : '小阿卡纳'}
             <span className="count">
@@ -67,7 +69,15 @@ export default function CardLibraryPage() {
               transition={{ delay: index * 0.03 }}
               onClick={() => navigate(`/learn/${card.id}`)}
             >
-              <div className="card-symbol">{card.imageSymbol}</div>
+              <div className="card-image-wrapper">
+                <img
+                  src={card.image}
+                  alt={card.chineseName}
+                  loading="lazy"
+                  className="card-image"
+                  onError={(e) => { (e.target as HTMLImageElement).src = '/cards/00-the-fool.jpg'; }}
+                />
+              </div>
               <div className="card-info">
                 <h4>{card.chineseName}</h4>
                 <p className="card-suit">{card.arcana === 'major' ? '大阿卡纳' : card.suit}</p>

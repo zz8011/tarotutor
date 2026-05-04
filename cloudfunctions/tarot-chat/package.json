@@ -1,0 +1,9 @@
+{
+  "name": "tarot-chat",
+  "version": "1.0.0",
+  "description": "塔罗 AI 聊天云函数",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "latest"
+  }
+}
