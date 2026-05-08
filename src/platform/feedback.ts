@@ -7,10 +7,5 @@ declare const wx: WxFeedback | undefined;
 export function showToast(title: string) {
   if (typeof wx !== 'undefined' && wx.showToast) {
     wx.showToast({ title, icon: 'none', duration: 1800 });
-    return;
-  }
-
-  if (typeof window !== 'undefined') {
-    window.alert(title);
   }
 }

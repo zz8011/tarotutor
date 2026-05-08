@@ -1,4 +1,43 @@
-import { TarotCard } from '../types';
+﻿import { TarotCard } from '../types';
+
+export function getCardImagePath(cardId: number, deck: 'eastern' | 'chinese-ink' = 'eastern'): string {
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const filenames: Record<number, string> = {
+    0: '00-the-fool', 1: '01-the-magician', 2: '02-the-high-priestess',
+    3: '03-the-empress', 4: '04-the-emperor', 5: '05-the-hierophant',
+    6: '06-the-lovers', 7: '07-the-chariot', 8: '08-strength',
+    9: '09-the-hermit', 10: '10-wheel-of-fortune', 11: '11-justice',
+    12: '12-the-hanged-man', 13: '13-death', 14: '14-temperance',
+    15: '15-the-devil', 16: '16-the-tower', 17: '17-the-star',
+    18: '18-the-moon', 19: '19-the-sun', 20: '20-judgement',
+    21: '21-the-world', 22: '22-ace-of-wands', 23: '23-two-of-wands',
+    24: '24-three-of-wands', 25: '25-four-of-wands', 26: '26-five-of-wands',
+    27: '27-six-of-wands', 28: '28-seven-of-wands', 29: '29-eight-of-wands',
+    30: '30-nine-of-wands', 31: '31-ten-of-wands', 32: '32-page-of-wands',
+    33: '33-knight-of-wands', 34: '34-queen-of-wands', 35: '35-king-of-wands',
+    36: '36-ace-of-cups', 37: '37-two-of-cups', 38: '38-three-of-cups',
+    39: '39-four-of-cups', 40: '40-five-of-cups', 41: '41-six-of-cups',
+    42: '42-seven-of-cups', 43: '43-eight-of-cups', 44: '44-nine-of-cups',
+    45: '45-ten-of-cups', 46: '46-page-of-cups', 47: '47-knight-of-cups',
+    48: '48-queen-of-cups', 49: '49-king-of-cups', 50: '50-ace-of-swords',
+    51: '51-two-of-swords', 52: '52-three-of-swords', 53: '53-four-of-swords',
+    54: '54-five-of-swords', 55: '55-six-of-swords', 56: '56-seven-of-swords',
+    57: '57-eight-of-swords', 58: '58-nine-of-swords', 59: '59-ten-of-swords',
+    60: '60-page-of-swords', 61: '61-knight-of-swords', 62: '62-queen-of-swords',
+    63: '63-king-of-swords', 64: '64-ace-of-pentacles', 65: '65-two-of-pentacles',
+    66: '66-three-of-pentacles', 67: '67-four-of-pentacles', 68: '68-five-of-pentacles',
+    69: '69-six-of-pentacles', 70: '70-seven-of-pentacles', 71: '71-eight-of-pentacles',
+    72: '72-nine-of-pentacles', 73: '73-ten-of-pentacles', 74: '74-page-of-pentacles',
+    75: '75-knight-of-pentacles', 76: '76-queen-of-pentacles', 77: '77-king-of-pentacles',
+  };
+  const base = filenames[cardId] || pad(cardId) + '-unknown';
+  return `/cards/${deck}/${base}.png`;
+}
+
+// Global deck override for reactive image paths
+let activeDeck: 'eastern' | 'chinese-ink' = 'eastern';
+export function setActiveDeck(deck: 'eastern' | 'chinese-ink') { activeDeck = deck; }
+export function getActiveDeck() { return activeDeck; }
 
 export const tarotCards: TarotCard[] = [
   {
@@ -15,7 +54,7 @@ export const tarotCards: TarotCard[] = [
     planet: "天王星",
     description: "悬崖边的年轻人，背着小包，望向天空，脚边有小狗陪伴。象征着即将跃入未知的勇气与天真。",
     imageSymbol: "🃏",
-    image: "/cards/00-the-fool.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "0代表无限可能，是起点也是终点，象征宇宙的完整循环。",
   },
   {
@@ -32,7 +71,7 @@ export const tarotCards: TarotCard[] = [
     planet: "水星",
     description: "桌前站着一位手持权杖的魔术师，桌上摆放着圣杯、宝剑、钱币和权杖，头顶无限符号。",
     imageSymbol: "🎩",
-    image: "/cards/01-the-magician.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "1是创造的数字，代表从虚无中显化万物的原始力量。",
   },
   {
@@ -49,7 +88,7 @@ export const tarotCards: TarotCard[] = [
     planet: "月亮",
     description: "端坐在黑白柱子之间的女祭司，膝上放着卷轴，身后帷幕遮掩着月亮与海洋。",
     imageSymbol: "🌙",
-    image: "/cards/02-the-high-priestess.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "2代表二元性，是连接可见与不可见世界的桥梁。",
   },
   {
@@ -66,7 +105,7 @@ export const tarotCards: TarotCard[] = [
     planet: "金星",
     description: "坐在麦田中的女皇，手持权杖，周围环绕着森林与河流，脚下是心形盾牌。",
     imageSymbol: "👑",
-    image: "/cards/03-the-empress.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "3是创造的数字，代表从二元对立中诞生的第三力量。",
   },
   {
@@ -83,7 +122,7 @@ export const tarotCards: TarotCard[] = [
     planet: "白羊座",
     description: "坐在石座上的皇帝，手持权杖与金球，身后是山脉与城堡，象征稳固的统治。",
     imageSymbol: "🏛️",
-    image: "/cards/04-the-emperor.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "4代表稳定与基础，是物质世界的四角。",
   },
   {
@@ -100,7 +139,7 @@ export const tarotCards: TarotCard[] = [
     planet: "金牛座",
     description: "两位信徒跪在教皇面前，他手持三重十字，身穿红袍，坐在两根柱子之间的宝座上。",
     imageSymbol: "🔑",
-    image: "/cards/05-the-hierophant.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "5代表改变与冲突，是打破旧有秩序的力量。",
   },
   {
@@ -117,7 +156,7 @@ export const tarotCards: TarotCard[] = [
     planet: "双子座",
     description: "亚当与夏娃站在伊甸园中，天使拉斐尔在上方祝福，蛇缠绕在知识之树旁。",
     imageSymbol: "💕",
-    image: "/cards/06-the-lovers.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "6代表和谐与平衡，是爱、美与真理的数字。",
   },
   {
@@ -134,7 +173,7 @@ export const tarotCards: TarotCard[] = [
     planet: "巨蟹座",
     description: "战士站在由两只狮身人面兽拉动的战车上，一黑一白，头顶星辰冠冕，手持权杖。",
     imageSymbol: "🏆",
-    image: "/cards/07-the-chariot.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "7代表内在探索与灵性觉醒，是通往深层真理的数字。",
   },
   {
@@ -151,7 +190,7 @@ export const tarotCards: TarotCard[] = [
     planet: "狮子座",
     description: "女子温柔地合上狮子的嘴，头顶无限符号，身穿白袍，象征以柔克刚的力量。",
     imageSymbol: "🦁",
-    image: "/cards/08-strength.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "8代表无限与永恒，是力量与成就的数字。",
   },
   {
@@ -168,7 +207,7 @@ export const tarotCards: TarotCard[] = [
     planet: "处女座",
     description: "老人手持灯笼独自站在山顶，灯笼中六芒星闪耀，象征内在的光芒照亮前路。",
     imageSymbol: "🏔️",
-    image: "/cards/09-the-hermit.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "9代表完成与圆满，是周期的结束与新开始的准备。",
   },
   {
@@ -185,7 +224,7 @@ export const tarotCards: TarotCard[] = [
     planet: "木星",
     description: "巨大的命运之轮中央，狮身人面兽在顶端，蛇在左侧下降，阿努比斯在右侧上升。",
     imageSymbol: "☸️",
-    image: "/cards/10-wheel-of-fortune.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "10代表完成与新的开始，是圆满的数字也是归零的起点。",
   },
   {
@@ -202,7 +241,7 @@ export const tarotCards: TarotCard[] = [
     planet: "天秤座",
     description: "正义女神端坐在两根柱子之间，手持天平与宝剑，双眼被布蒙住，象征公正无私。",
     imageSymbol: "⚖️",
-    image: "/cards/11-justice.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "11是大师数字，代表灵性觉醒与直觉的通道。",
   },
   {
@@ -219,7 +258,7 @@ export const tarotCards: TarotCard[] = [
     planet: "海王星",
     description: "男子倒吊在T形十字架上，一条腿弯曲成三角形，头顶光环，表情平静安详。",
     imageSymbol: "🙃",
-    image: "/cards/12-the-hanged-man.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "12代表完成的周期，是牺牲与重生的数字。",
   },
   {
@@ -236,7 +275,7 @@ export const tarotCards: TarotCard[] = [
     planet: "天蝎座",
     description: "骷髅骑士骑着白马，手持黑旗，国王、主教、女人和孩子都跪拜在他面前。",
     imageSymbol: "💀",
-    image: "/cards/13-death.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "13代表转变与重生，是死亡与新生的神秘数字。",
   },
   {
@@ -253,7 +292,7 @@ export const tarotCards: TarotCard[] = [
     planet: "射手座",
     description: "天使站在河边，一只脚在水中一只在陆地，将两个杯子中的水相互倾倒融合。",
     imageSymbol: "🏺",
-    image: "/cards/14-temperance.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "14代表平衡与和谐，是将对立力量融合的数字。",
   },
   {
@@ -270,7 +309,7 @@ export const tarotCards: TarotCard[] = [
     planet: "摩羯座",
     description: "恶魔坐在宝座上，亚当和夏娃被锁链束缚在他脚下，但锁链是松的，随时可以挣脱。",
     imageSymbol: "😈",
-    image: "/cards/15-the-devil.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "15代表物质世界的诱惑，是灵性觉醒前的考验。",
   },
   {
@@ -287,7 +326,7 @@ export const tarotCards: TarotCard[] = [
     planet: "火星",
     description: "高塔被闪电击中，火焰从窗户喷出，两个人从塔顶坠落，皇冠在空中散落。",
     imageSymbol: "⚡",
-    image: "/cards/16-the-tower.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "16代表破坏与重建，是旧结构崩塌后新秩序建立的力量。",
   },
   {
@@ -304,7 +343,7 @@ export const tarotCards: TarotCard[] = [
     planet: "水瓶座",
     description: "裸身女子跪在池边，一只脚在水中，将水倒入池中，头顶巨大八角星闪耀。",
     imageSymbol: "✨",
-    image: "/cards/17-the-star.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "17代表希望与灵性觉醒，是在黑暗中指引方向的星光。",
   },
   {
@@ -321,7 +360,7 @@ export const tarotCards: TarotCard[] = [
     planet: "双鱼座",
     description: "满月高悬，两只犬类在月下吠叫，小龙虾从水中爬出，小径通向远方的山丘。",
     imageSymbol: "🌕",
-    image: "/cards/18-the-moon.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "18代表完成与收获，是月亮周期的圆满与潜意识的深层探索。",
   },
   {
@@ -338,7 +377,7 @@ export const tarotCards: TarotCard[] = [
     planet: "太阳",
     description: "灿烂的太阳高悬，孩童骑在白马上，手持红旗，向日葵在墙后盛开。",
     imageSymbol: "☀️",
-    image: "/cards/19-the-sun.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "19代表成就与圆满，是太阳的光芒照亮一切的力量。",
   },
   {
@@ -355,7 +394,7 @@ export const tarotCards: TarotCard[] = [
     planet: "冥王星",
     description: "天使加百列吹号，人们从石棺中升起，双臂张开，迎接审判与重生。",
     imageSymbol: "📯",
-    image: "/cards/20-judgement.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "20代表完成与评估，是周期结束后的总结与新开始。",
   },
   {
@@ -372,7 +411,7 @@ export const tarotCards: TarotCard[] = [
     planet: "土星",
     description: "舞者在花环中央，手持两根权杖，四角是四福音书作者的符号：天使、鹰、牛、狮。",
     imageSymbol: "🌍",
-    image: "/cards/21-the-world.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "21代表完成与圆满，是灵性旅程的终点与新循环的起点。",
   },
   // ===== 小阿尔卡纳：权杖 (Wands) =====
@@ -390,7 +429,7 @@ export const tarotCards: TarotCard[] = [
     planet: "火星",
     description: "从云中伸出一只手，握着一根发芽的权杖，四周环绕着光芒与能量。",
     imageSymbol: "🔥",
-    image: "/cards/22-ace-of-wands.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "1是新的开始，代表火元素的原始创造力。",
   },
   {
@@ -407,7 +446,7 @@ export const tarotCards: TarotCard[] = [
     planet: "火星",
     description: "男子站在城堡上，手持地球仪，身后两根权杖，一只被固定在墙上，望向远方。",
     imageSymbol: "🔥",
-    image: "/cards/23-two-of-wands.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "2代表选择与平衡，是规划与决策的数字。",
   },
   {
@@ -424,7 +463,7 @@ export const tarotCards: TarotCard[] = [
     planet: "太阳",
     description: "男子站在悬崖上，三根权杖插在地上，他望向远方航行的船只。",
     imageSymbol: "🔥",
-    image: "/cards/24-three-of-wands.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "3代表成长与扩展，是创造力开始展现的数字。",
   },
   {
@@ -441,7 +480,7 @@ export const tarotCards: TarotCard[] = [
     planet: "金星",
     description: "四根权杖搭成拱门，人们欢庆，背景是城堡，象征庆祝与社区。",
     imageSymbol: "🔥",
-    image: "/cards/25-four-of-wands.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "4代表稳定与基础，是建立稳固结构的数字。",
   },
   {
@@ -458,7 +497,7 @@ export const tarotCards: TarotCard[] = [
     planet: "土星",
     description: "五名男子手持权杖互相争斗，姿态各异，象征竞争与冲突。",
     imageSymbol: "🔥",
-    image: "/cards/26-five-of-wands.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "5代表冲突与改变，是打破稳定的力量。",
   },
   {
@@ -475,7 +514,7 @@ export const tarotCards: TarotCard[] = [
     planet: "木星",
     description: "骑士骑白马凯旋，手持装饰桂冠的权杖，人们欢呼庆祝。",
     imageSymbol: "🔥",
-    image: "/cards/27-six-of-wands.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "6代表和谐与平衡，是胜利后分享荣耀的数字。",
   },
   {
@@ -492,7 +531,7 @@ export const tarotCards: TarotCard[] = [
     planet: "火星",
     description: "男子站在高地，手持权杖对抗下方六根权杖，象征坚持与防御。",
     imageSymbol: "🔥",
-    image: "/cards/28-seven-of-wands.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "7代表内在力量与灵性探索，是坚持信念的数字。",
   },
   {
@@ -509,7 +548,7 @@ export const tarotCards: TarotCard[] = [
     planet: "水星",
     description: "八根权杖在空中飞行，穿过云层，象征速度与进展。",
     imageSymbol: "🔥",
-    image: "/cards/29-eight-of-wands.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "8代表无限与永恒，是能量流动与进展的数字。",
   },
   {
@@ -526,7 +565,7 @@ export const tarotCards: TarotCard[] = [
     planet: "月亮",
     description: "男子头缠绷带，手持权杖，身后八根权杖排列如栅栏，象征坚持与防御。",
     imageSymbol: "🔥",
-    image: "/cards/30-nine-of-wands.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "9代表完成与圆满，是经历考验后的坚韧。",
   },
   {
@@ -543,7 +582,7 @@ export const tarotCards: TarotCard[] = [
     planet: "土星",
     description: "男子背负十根权杖，弯腰前行，远处是村庄，象征负担与责任。",
     imageSymbol: "🔥",
-    image: "/cards/31-ten-of-wands.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "10代表完成与新的开始，是负担达到极限后需要释放的数字。",
   },
   {
@@ -560,7 +599,7 @@ export const tarotCards: TarotCard[] = [
     planet: "火星",
     description: "年轻侍从手持权杖，头戴羽毛，身穿鲜艳服装，望向远方，充满好奇与热情。",
     imageSymbol: "🔥",
-    image: "/cards/32-page-of-wands.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "11是大师数字，代表灵性觉醒与热情探索。",
   },
   {
@@ -577,7 +616,7 @@ export const tarotCards: TarotCard[] = [
     planet: "太阳",
     description: "骑士骑黑马，手持权杖，身穿盔甲，充满冲劲，象征行动与冒险。",
     imageSymbol: "🔥",
-    image: "/cards/33-knight-of-wands.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "12代表完成的周期，是行动与冒险后的成长。",
   },
   {
@@ -594,7 +633,7 @@ export const tarotCards: TarotCard[] = [
     planet: "木星",
     description: "王后坐在宝座上，手持权杖，头戴向日葵花环，身旁黑猫，象征热情与独立。",
     imageSymbol: "🔥",
-    image: "/cards/34-queen-of-wands.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "13代表转变与重生，是热情成熟后的领导力。",
   },
   {
@@ -611,7 +650,7 @@ export const tarotCards: TarotCard[] = [
     planet: "火星",
     description: "国王坐在宝座上，手持权杖，身穿华丽长袍，背景是狮子，象征权威与领导力。",
     imageSymbol: "🔥",
-    image: "/cards/35-king-of-wands.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "14代表平衡与和谐，是领导力与远见的成熟。",
   },
   // ===== 小阿尔卡纳：圣杯 (Cups) =====
@@ -629,7 +668,7 @@ export const tarotCards: TarotCard[] = [
     planet: "金星",
     description: "从云中伸出一只手，托着溢出的圣杯，五道水流倾泻而下，象征情感的涌现。",
     imageSymbol: "💧",
-    image: "/cards/36-ace-of-cups.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "1是新的开始，代表水元素的原始情感。",
   },
   {
@@ -646,7 +685,7 @@ export const tarotCards: TarotCard[] = [
     planet: "金星",
     description: "一男一女面对面，手持圣杯，象征心灵的结合与平等的伙伴关系。",
     imageSymbol: "💧",
-    image: "/cards/37-two-of-cups.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "2代表选择与平衡，是关系与结合的数字。",
   },
   {
@@ -663,7 +702,7 @@ export const tarotCards: TarotCard[] = [
     planet: "水星",
     description: "三位女子举杯庆祝，周围是丰收的果实，象征友谊与欢庆。",
     imageSymbol: "💧",
-    image: "/cards/38-three-of-cups.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "3代表成长与扩展，是友谊与社交的数字。",
   },
   {
@@ -680,7 +719,7 @@ export const tarotCards: TarotCard[] = [
     planet: "月亮",
     description: "男子坐在树下，面前三个圣杯，云中伸出一只手递来第四个圣杯，象征沉思与觉醒。",
     imageSymbol: "💧",
-    image: "/cards/39-four-of-cups.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "4代表稳定与基础，是沉思与内省的数字。",
   },
   {
@@ -697,7 +736,7 @@ export const tarotCards: TarotCard[] = [
     planet: "火星",
     description: "男子低头看着倒下的三个圣杯，身后两个圣杯仍然站立，象征失落与希望并存。",
     imageSymbol: "💧",
-    image: "/cards/40-five-of-cups.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "5代表冲突与改变，是经历失落后的反思与成长。",
   },
   {
@@ -714,7 +753,7 @@ export const tarotCards: TarotCard[] = [
     planet: "太阳",
     description: "两个孩子分享圣杯中的花朵，背景是宁静的村庄，象征纯真与怀旧。",
     imageSymbol: "💧",
-    image: "/cards/41-six-of-cups.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "6代表和谐与平衡，是回忆与分享的数字。",
   },
   {
@@ -731,7 +770,7 @@ export const tarotCards: TarotCard[] = [
     planet: "金星",
     description: "男子面对七个圣杯，每个圣杯中有不同的幻象：珠宝、龙、面具等，象征选择与幻想。",
     imageSymbol: "💧",
-    image: "/cards/42-seven-of-cups.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "7代表内在探索与灵性觉醒，是面对选择的数字。",
   },
   {
@@ -748,7 +787,7 @@ export const tarotCards: TarotCard[] = [
     planet: "土星",
     description: "男子转身离开八个圣杯，向山丘走去，象征放下过去，寻求更深的意义。",
     imageSymbol: "💧",
-    image: "/cards/43-eight-of-cups.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "8代表无限与永恒，是放下与寻求的数字。",
   },
   {
@@ -765,7 +804,7 @@ export const tarotCards: TarotCard[] = [
     planet: "木星",
     description: "男子坐在九个圣杯前，双手交叉，面带微笑，象征满足与愿望实现。",
     imageSymbol: "💧",
-    image: "/cards/44-nine-of-cups.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "9代表完成与圆满，是愿望实现后的满足。",
   },
   {
@@ -782,7 +821,7 @@ export const tarotCards: TarotCard[] = [
     planet: "火星",
     description: "一对夫妇张开双臂，上方十个圣杯排列成彩虹，象征家庭的和谐与圆满。",
     imageSymbol: "💧",
-    image: "/cards/45-ten-of-cups.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "10代表完成与新的开始，是家庭和谐与情感圆满的数字。",
   },
   {
@@ -799,7 +838,7 @@ export const tarotCards: TarotCard[] = [
     planet: "水星",
     description: "年轻侍从手持圣杯，杯中有鱼跳出，象征直觉与创意的涌现。",
     imageSymbol: "💧",
-    image: "/cards/46-page-of-cups.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "11是大师数字，代表灵性觉醒与情感萌芽。",
   },
   {
@@ -816,7 +855,7 @@ export const tarotCards: TarotCard[] = [
     planet: "金星",
     description: "骑士骑白马，手持圣杯，身穿盔甲，象征浪漫的追求与理想的追寻。",
     imageSymbol: "💧",
-    image: "/cards/47-knight-of-cups.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "12代表完成的周期，是浪漫追求后的成长。",
   },
   {
@@ -833,7 +872,7 @@ export const tarotCards: TarotCard[] = [
     planet: "月亮",
     description: "王后坐在宝座上，手持圣杯，头戴贝壳冠冕，身旁是海洋，象征情感深度与直觉。",
     imageSymbol: "💧",
-    image: "/cards/48-queen-of-cups.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "13代表转变与重生，是情感成熟后的同理心。",
   },
   {
@@ -850,7 +889,7 @@ export const tarotCards: TarotCard[] = [
     planet: "木星",
     description: "国王坐在宝座上，手持圣杯，身穿长袍，背景是海洋，象征情感成熟与领导力。",
     imageSymbol: "💧",
-    image: "/cards/49-king-of-cups.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "14代表平衡与和谐，是情感成熟后的领导力。",
   },
   // ===== 小阿尔卡纳：宝剑 (Swords) =====
@@ -868,7 +907,7 @@ export const tarotCards: TarotCard[] = [
     planet: "水星",
     description: "从云中伸出一只手，握着双刃剑，剑尖戴着皇冠，象征思维的力量与真理。",
     imageSymbol: "⚔️",
-    image: "/cards/50-ace-of-swords.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "1是新的开始，代表风元素的原始思维力量。",
   },
   {
@@ -885,7 +924,7 @@ export const tarotCards: TarotCard[] = [
     planet: "月亮",
     description: "女子蒙眼坐在海边，双手各持一剑交叉于胸前，象征僵局与决策。",
     imageSymbol: "⚔️",
-    image: "/cards/51-two-of-swords.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "2代表选择与平衡，是决策与僵局的数字。",
   },
   {
@@ -902,7 +941,7 @@ export const tarotCards: TarotCard[] = [
     planet: "土星",
     description: "三把宝剑刺穿一颗心，背景是暴风雨，象征心碎与痛苦。",
     imageSymbol: "⚔️",
-    image: "/cards/52-three-of-swords.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "3代表成长与扩展，是经历痛苦后的疗愈。",
   },
   {
@@ -919,7 +958,7 @@ export const tarotCards: TarotCard[] = [
     planet: "木星",
     description: "骑士躺在教堂中，双手合十，三把宝剑挂在墙上，第四把在身旁，象征休息与恢复。",
     imageSymbol: "⚔️",
-    image: "/cards/53-four-of-swords.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "4代表稳定与基础，是休息与恢复的数字。",
   },
   {
@@ -936,7 +975,7 @@ export const tarotCards: TarotCard[] = [
     planet: "金星",
     description: "男子手持三把宝剑，看着两个失败者离去，背景是阴沉的天空，象征冲突与胜利。",
     imageSymbol: "⚔️",
-    image: "/cards/54-five-of-swords.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "5代表冲突与改变，是策略与冲突的数字。",
   },
   {
@@ -953,7 +992,7 @@ export const tarotCards: TarotCard[] = [
     planet: "水星",
     description: "船夫划船载着乘客，六把宝剑插在船中，水面平静，象征过渡与前进。",
     imageSymbol: "⚔️",
-    image: "/cards/55-six-of-swords.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "6代表和谐与平衡，是过渡与疗愈的数字。",
   },
   {
@@ -970,7 +1009,7 @@ export const tarotCards: TarotCard[] = [
     planet: "月亮",
     description: "男子偷偷拿着五把宝剑，回头看向留下的两把，象征策略与欺骗。",
     imageSymbol: "⚔️",
-    image: "/cards/56-seven-of-swords.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "7代表内在探索与灵性觉醒，是策略与机智的数字。",
   },
   {
@@ -987,7 +1026,7 @@ export const tarotCards: TarotCard[] = [
     planet: "木星",
     description: "女子被蒙眼绑在八把宝剑围成的圈中，但脚边有出路，象征自我设限与解放。",
     imageSymbol: "⚔️",
-    image: "/cards/57-eight-of-swords.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "8代表无限与永恒，是限制与解放的数字。",
   },
   {
@@ -1004,7 +1043,7 @@ export const tarotCards: TarotCard[] = [
     planet: "火星",
     description: "女子坐在床上，双手掩面，九把宝剑挂在墙上，象征焦虑与恐惧。",
     imageSymbol: "⚔️",
-    image: "/cards/58-nine-of-swords.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "9代表完成与圆满，是经历焦虑后的疗愈。",
   },
   {
@@ -1021,7 +1060,7 @@ export const tarotCards: TarotCard[] = [
     planet: "太阳",
     description: "男子躺在地上，背上插着十把宝剑，天空中有曙光，象征痛苦的结束与重生。",
     imageSymbol: "⚔️",
-    image: "/cards/59-ten-of-swords.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "10代表完成与新的开始，是痛苦结束后的重生。",
   },
   {
@@ -1038,7 +1077,7 @@ export const tarotCards: TarotCard[] = [
     planet: "水星",
     description: "年轻侍从手持宝剑，头戴羽毛，身穿鲜艳服装，充满好奇与警觉。",
     imageSymbol: "⚔️",
-    image: "/cards/60-page-of-swords.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "11是大师数字，代表灵性觉醒与好奇心。",
   },
   {
@@ -1055,7 +1094,7 @@ export const tarotCards: TarotCard[] = [
     planet: "土星",
     description: "骑士骑白马，手持宝剑，身穿盔甲，充满冲劲，象征行动与决心。",
     imageSymbol: "⚔️",
-    image: "/cards/61-knight-of-swords.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "12代表完成的周期，是行动与决心后的成长。",
   },
   {
@@ -1072,7 +1111,7 @@ export const tarotCards: TarotCard[] = [
     planet: "处女座",
     description: "王后坐在宝座上，手持宝剑，头戴星星冠冕，背景是蓝天白云，象征清晰与智慧。",
     imageSymbol: "⚔️",
-    image: "/cards/62-queen-of-swords.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "13代表转变与重生，是思维成熟后的智慧。",
   },
   {
@@ -1089,7 +1128,7 @@ export const tarotCards: TarotCard[] = [
     planet: "水瓶座",
     description: "国王坐在宝座上，手持宝剑，身穿长袍，背景是飞鸟，象征权威与真理。",
     imageSymbol: "⚔️",
-    image: "/cards/63-king-of-swords.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "14代表平衡与和谐，是领导力与真理的成熟。",
   },
   // ===== 小阿尔卡纳：星币 (Pentacles) =====
@@ -1107,7 +1146,7 @@ export const tarotCards: TarotCard[] = [
     planet: "水星",
     description: "从云中伸出一只手，托着一枚星币，四周环绕着花园与拱门，象征物质机会。",
     imageSymbol: "🪙",
-    image: "/cards/64-ace-of-pentacles.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "1是新的开始，代表土元素的原始物质力量。",
   },
   {
@@ -1124,7 +1163,7 @@ export const tarotCards: TarotCard[] = [
     planet: "木星",
     description: "男子手持两枚星币，在波浪中跳舞，象征平衡与适应。",
     imageSymbol: "🪙",
-    image: "/cards/65-two-of-pentacles.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "2代表选择与平衡，是多任务与适应的数字。",
   },
   {
@@ -1141,7 +1180,7 @@ export const tarotCards: TarotCard[] = [
     planet: "火星",
     description: "工匠在教堂中工作，两位顾问在旁，三枚星币装饰在拱门上，象征合作与技能。",
     imageSymbol: "🪙",
-    image: "/cards/66-three-of-pentacles.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "3代表成长与扩展，是合作与技能的数字。",
   },
   {
@@ -1158,7 +1197,7 @@ export const tarotCards: TarotCard[] = [
     planet: "太阳",
     description: "男子坐在宝座上，双手双脚各持一枚星币，头顶一枚，象征保守与控制。",
     imageSymbol: "🪙",
-    image: "/cards/67-four-of-pentacles.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "4代表稳定与基础，是保守与控制的数字。",
   },
   {
@@ -1175,7 +1214,7 @@ export const tarotCards: TarotCard[] = [
     planet: "水星",
     description: "两个人在雪中行走，经过教堂的彩色玻璃窗，五枚星币在上方，象征困难与希望。",
     imageSymbol: "🪙",
-    image: "/cards/68-five-of-pentacles.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "5代表冲突与改变，是经历困难后的恢复。",
   },
   {
@@ -1192,7 +1231,7 @@ export const tarotCards: TarotCard[] = [
     planet: "月亮",
     description: "商人手持天平，向两侧的人分发星币，象征慷慨与平等。",
     imageSymbol: "🪙",
-    image: "/cards/69-six-of-pentacles.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "6代表和谐与平衡，是给予与接受的数字。",
   },
   {
@@ -1209,7 +1248,7 @@ export const tarotCards: TarotCard[] = [
     planet: "土星",
     description: "男子倚着锄头，看着七枚星币在植物上生长，象征评估与耐心。",
     imageSymbol: "🪙",
-    image: "/cards/70-seven-of-pentacles.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "7代表内在探索与灵性觉醒，是评估与耐心的数字。",
   },
   {
@@ -1226,7 +1265,7 @@ export const tarotCards: TarotCard[] = [
     planet: "太阳",
     description: "工匠专注地雕刻第八枚星币，墙上挂着七枚完成的星币，象征勤奋与精通。",
     imageSymbol: "🪙",
-    image: "/cards/71-eight-of-pentacles.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "8代表无限与永恒，是勤奋与精通的数字。",
   },
   {
@@ -1243,7 +1282,7 @@ export const tarotCards: TarotCard[] = [
     planet: "金星",
     description: "女子站在花园中，身穿华丽长袍，手持猎鹰，九枚星币环绕，象征独立与享受。",
     imageSymbol: "🪙",
-    image: "/cards/72-nine-of-pentacles.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "9代表完成与圆满，是独立与成就的数字。",
   },
   {
@@ -1260,7 +1299,7 @@ export const tarotCards: TarotCard[] = [
     planet: "水星",
     description: "一家人在拱门前，十枚星币排列成生命之树，象征财富与传承。",
     imageSymbol: "🪙",
-    image: "/cards/73-ten-of-pentacles.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "10代表完成与新的开始，是财富与传承的圆满。",
   },
   {
@@ -1277,7 +1316,7 @@ export const tarotCards: TarotCard[] = [
     planet: "水星",
     description: "年轻侍从手持星币，站在花园中，充满好奇与务实的态度。",
     imageSymbol: "🪙",
-    image: "/cards/74-page-of-pentacles.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "11是大师数字，代表灵性觉醒与新机会。",
   },
   {
@@ -1294,7 +1333,7 @@ export const tarotCards: TarotCard[] = [
     planet: "土星",
     description: "骑士骑黑马，手持星币，身穿盔甲，稳重前行，象征勤奋与可靠。",
     imageSymbol: "🪙",
-    image: "/cards/75-knight-of-pentacles.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "12代表完成的周期，是勤奋与耐心后的成长。",
   },
   {
@@ -1311,7 +1350,7 @@ export const tarotCards: TarotCard[] = [
     planet: "摩羯座",
     description: "王后坐在宝座上，手持星币，头戴花环，身旁是兔子，象征 nurturing 与务实。",
     imageSymbol: "🪙",
-    image: "/cards/76-queen-of-pentacles.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "13代表转变与重生，是 nurturing 成熟后的慷慨。",
   },
   {
@@ -1328,7 +1367,7 @@ export const tarotCards: TarotCard[] = [
     planet: "处女座",
     description: "国王坐在宝座上，手持星币，身穿华丽长袍，背景是城堡，象征成功与领导力。",
     imageSymbol: "🪙",
-    image: "/cards/77-king-of-pentacles.jpg",
+    get image() { return getCardImagePath(this.id, getActiveDeck()); },
     numerology: "14代表平衡与和谐，是领导力与成功的成熟。",
   },
 ];

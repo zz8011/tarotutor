@@ -1,19 +1,21 @@
 import { useState } from 'react';
 import BottomNav from '../components/BottomNav';
-import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Shuffle, Sparkles, MessageCircle } from 'lucide-react';
+import { Sparkles, History, MoonStar } from 'lucide-react';
 import { spreads } from '../data/spreads';
-import { getRandomCard, getCardById } from '../data/tarotCards';
+import { getRandomCard, getCardById, getCardImagePath } from '../data/tarotCards';
 import { useAppStore } from '../store/useAppStore';
 import { getSpreadInterpretation } from '../services/ai';
-import { showToast } from '../platform/feedback';
-import type { CardSpread, SpreadCard } from '../types';
+import type { SpreadCard, CardSpread } from '../types';
 import './SpreadPage.scss';
 
+function getRandomOrientation(): 'upright' | 'reversed' {
+  return Math.random() > 0.5 ? 'upright' : 'reversed';
+}
+
 export default function SpreadPage() {
-  const navigate = useNavigate();
-  const { addSpread, primaryMentor } = useAppStore();
+  const addSpread = useAppStore((state) => state.addSpread);
+  const cardDeck = useAppStore((state) => state.cardDeck);
   const [selectedSpread, setSelectedSpread] = useState(spreads[0]);
   const [drawnCards, setDrawnCards] = useState<SpreadCard[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -21,27 +23,15 @@ export default function SpreadPage() {
   const [interpretation, setInterpretation] = useState('');
   const [isInterpreting, setIsInterpreting] = useState(false);
   const [userQuestion, setUserQuestion] = useState('');
-  const [showQuestionInput] = useState(true);
-  const [userFeeling, setUserFeeling] = useState('');
-  const [showFeelingInput, setShowFeelingInput] = useState(false);
-  const [hasSubmittedFeeling, setHasSubmittedFeeling] = useState(false);
 
   const handleDraw = () => {
-    // 验证问题已填写
-    if (!userQuestion.trim()) {
-      showToast('请先写下你心中想问的问题');
-      return;
-    }
-    
+    if (!userQuestion.trim()) return;
+
     setIsDrawing(true);
     setDrawnCards([]);
     setShowResult(false);
     setInterpretation('');
-    setShowFeelingInput(false);
-    setHasSubmittedFeeling(false);
-    setUserFeeling('');
 
-    // Simulate drawing animation
     const newCards: SpreadCard[] = [];
     for (let i = 0; i < selectedSpread.cardCount; i++) {
       const card = getRandomCard();
@@ -49,290 +39,205 @@ export default function SpreadPage() {
         position: i,
         positionIndex: i,
         cardId: card.id,
-        orientation: (Math.random() > 0.5 ? 'upright' : 'reversed') as 'upright' | 'reversed',
+        orientation: getRandomOrientation(),
       });
     }
 
-    setTimeout(() => {
-      setDrawnCards(newCards);
-      setIsDrawing(false);
-      setShowResult(true);
-      setShowFeelingInput(true); // 显示感受输入
-
-      // Save spread
-      const spread: CardSpread = {
-        id: `spread_${Date.now()}`,
-        templateId: selectedSpread.id,
-        spreadTypeId: selectedSpread.id,
-        date: new Date().toISOString(),
-        question: userQuestion || '',
-        cards: newCards,
-        positions: selectedSpread.positions.map((p, i) => ({
-          position: i,
-          name: p.label,
-          meaning: p.meaning,
-          cardId: newCards[i]?.cardId || null,
-          orientation: newCards[i]?.orientation || 'upright',
-        })),
-        interpretation: '',
-      };
-      addSpread(spread);
-    }, 2000);
+    newCards.forEach((c, i) => {
+      setTimeout(() => {
+        setDrawnCards(prev => [...prev, c]);
+        if (i === newCards.length - 1) {
+          setIsDrawing(false);
+          setShowResult(true);
+          handleInterpret(newCards);
+        }
+      }, 400 * (i + 1));
+    });
   };
 
-  // AI 解读牌阵
-  const handleInterpret = async () => {
-    if (drawnCards.length === 0) return;
-    
-    // 验证感受已填写
-    if (!userFeeling.trim()) {
-      showToast('请先写下你对这个牌阵的第一感受');
-      return;
-    }
-    
+  const handleInterpret = async (cards: SpreadCard[]) => {
     setIsInterpreting(true);
-    
     try {
-      // 构建当前牌阵数据
-      const currentSpread: CardSpread = {
-        id: `spread_${Date.now()}`,
+      const spreadObj: CardSpread = {
+        id: Date.now().toString(),
         templateId: selectedSpread.id,
         date: new Date().toISOString(),
         question: userQuestion,
-        positions: selectedSpread.positions.map((p, i) => ({
+        positions: cards.map((c, i) => ({
           position: i,
-          name: p.label,
-          meaning: p.meaning,
-          cardId: drawnCards[i]?.cardId || null,
-          orientation: drawnCards[i]?.orientation || 'upright',
+          name: selectedSpread.positions[i]?.label || `位置${i + 1}`,
+          meaning: selectedSpread.positions[i]?.meaning || '',
+          cardId: c.cardId,
+          orientation: c.orientation,
         })),
+        cards,
         interpretation: '',
       };
-      
-      const result = await getSpreadInterpretation(
-        currentSpread,
-        userQuestion,
-        primaryMentor || undefined
-      );
-      
-      // 添加一句话总结
-      const summary = `\n\n💫 一句话总结：${userQuestion}——这个牌阵提醒你，${result.includes('建议') ? '信任自己的直觉，你已经有答案了' : '保持开放的心态，变化正在发生'}。`;
-      
-      setInterpretation(result + summary);
-      setHasSubmittedFeeling(true);
+      const result = await getSpreadInterpretation(spreadObj, userQuestion);
+      setInterpretation(result);
+      addSpread({ ...spreadObj, interpretation: result });
     } catch (error) {
-      console.error('牌阵解读失败:', error);
-      setInterpretation('抱歉，暂时无法获取 AI 解读。请根据牌面含义自行感悟，或者稍后再试。');
+      console.error('Interpretation failed:', error);
+      setInterpretation('解读暂时不可用，请稍后再试。');
     } finally {
       setIsInterpreting(false);
     }
   };
 
+  const resetSpread = () => {
+    setDrawnCards([]);
+    setShowResult(false);
+    setInterpretation('');
+    setUserQuestion('');
+  };
+
+  const particles = [
+    { top: '80%', left: '15%', size: 4, delay: 0 },
+    { top: '85%', left: '45%', size: 6, delay: 1.5 },
+    { top: '75%', left: '80%', size: 4, delay: 3 },
+    { top: '90%', left: '30%', size: 5, delay: 0.8 },
+  ];
+
   return (
-    <div className="spread-page page-container">
-      <div className="spread-header">
-        <button className="back-btn" aria-label="返回" onClick={() => navigate(-1)}>
-          <ArrowLeft size={20} />
-        </button>
-        <h1>牌阵练习</h1>
-      </div>
-
-      {/* Spread Selector */}
-      <div className="spread-selector">
-        {spreads.map((spread) => (
-          <button
-            key={spread.id}
-            className={`spread-option ${selectedSpread.id === spread.id ? 'active' : ''}`}
-            onClick={() => {
-              setSelectedSpread(spread);
-              setDrawnCards([]);
-              setShowResult(false);
+    <div className="spread-page">
+      <div className="particles-bg">
+        {particles.map((p, i) => (
+          <div
+            key={i}
+            className="particle"
+            style={{
+              top: p.top, left: p.left,
+              width: p.size, height: p.size,
+              animationDelay: `${p.delay}s`,
             }}
-          >
-            <span className="spread-name">{spread.chineseName}</span>
-            <span className="spread-count">{spread.cardCount}张</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Spread Description */}
-      <div className="spread-info card-glass">
-        <h3>{selectedSpread.chineseName}</h3>
-        <p>{selectedSpread.description}</p>
-        <div className="positions">
-          {selectedSpread.positions.map((pos) => (
-            <div key={pos.index} className="position">
-              <span className="position-index">{pos.index + 1}</span>
-              <span className="position-label">{pos.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Question Input */}
-      {showQuestionInput && (
-        <motion.div
-          className="question-input-section card-glass"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <label>你心中想问的问题（必填）：</label>
-          <input
-            type="text"
-            value={userQuestion}
-            onChange={(e) => setUserQuestion(e.target.value)}
-            placeholder="例如：我最近的工作发展如何？"
-            aria-label="输入你的问题"
-            className="question-input"
-            required
           />
-          {!userQuestion.trim() && (
-            <p className="required-hint">✨ 写下你的问题，让塔罗为你指引方向</p>
-          )}
-        </motion.div>
-      )}
+        ))}
+        <div className="radial-glow" />
+      </div>
 
-      {/* Draw Button */}
-      {!showResult && (
-        <motion.button
-          className="draw-btn btn-primary"
-          onClick={handleDraw}
-          disabled={isDrawing}
-          whileTap={{ scale: 0.95 }}
-        >
-          {isDrawing ? (
-            <>
-              <div className="spinner" />
-              正在洗牌...
-            </>
-          ) : (
-            <>
-              <Shuffle size={20} />
-              开始抽牌
-            </>
-          )}
-        </motion.button>
-      )}
+      <header className="spread-header">
+        <div className="header-row">
+          <h1 className="header-title">命理占卜</h1>
+          <button className="history-btn">
+            <History size={14} />
+            历史
+          </button>
+        </div>
+        <nav className="spread-tabs">
+          {spreads.slice(0, 4).map((s) => (
+            <button
+              key={s.id}
+              className={`spread-tab ${selectedSpread.id === s.id ? 'active' : ''}`}
+              onClick={() => { setSelectedSpread(s); resetSpread(); }}
+            >
+              {s.chineseName}
+            </button>
+          ))}
+        </nav>
+      </header>
 
-      {/* Drawn Cards */}
-      {showResult && (
-        <motion.div
-          className="spread-result"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
-          <h3>
-            <Sparkles size={18} />
-            牌阵结果
-          </h3>
-          
-          {/* 用户问题展示 */}
-          <div className="user-question-display card-glass">
-            <strong>你的问题：</strong>{userQuestion}
+      <main className="spread-main">
+        {!showResult && (
+          <div className="question-area">
+            <input
+              type="text"
+              placeholder="写下你心中的问题..."
+              value={userQuestion}
+              onChange={(e) => setUserQuestion(e.target.value)}
+              className="question-input"
+            />
           </div>
-          <div className={`spread-layout layout-${selectedSpread.cardCount}`}>
-            {drawnCards.map((drawn, index) => {
-              const card = getCardById(Number(drawn.cardId));
-              if (!card) return null;
-              const position = selectedSpread.positions[index];
-              
-              return (
-                <motion.div
-                  key={index}
-                  className={`spread-card ${drawn.orientation}`}
-                  initial={{ opacity: 0, rotateY: 180 }}
-                  animate={{ opacity: 1, rotateY: 0 }}
-                  transition={{ delay: index * 0.3 }}
-                >
-                  <div className="card-position">{position?.label}</div>
-                  <div className="card-image-wrapper">
-                    <img
-                      src={card.image}
-                      alt={card.chineseName}
-                      className="card-image"
-                      style={{ transform: drawn.orientation === 'reversed' ? 'rotate(180deg)' : 'none' }}
-                      loading="lazy"
-                    />
-                  </div>
-                  <div className="card-name">{card.chineseName}</div>
-                  <div className="card-orientation">
-                    {drawn.orientation === 'upright' ? '正位' : '逆位'}
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
+        )}
 
-          {/* AI Interpretation */}
-          <AnimatePresence>
-            {interpretation && (
-              <motion.div
-                className="ai-interpretation card-glass"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-              >
-                <div className="interpretation-header">
-                  <Sparkles size={18} className="icon-gold" />
-                  <h4>AI 导师解读</h4>
-                </div>
-                <div className="interpretation-content">
-                  {interpretation.split('\n').map((line, i) => (
-                    <p key={i}>{line}</p>
-                  ))}
-                </div>
+        <div className={`card-slots count-${selectedSpread.cardCount}`}>
+          {selectedSpread.positions.map((pos, i) => {
+            const drawnCard = drawnCards[i];
+            const cardData = drawnCard ? getCardById(drawnCard.cardId) : null;
+
+            return (
+              <motion.div key={i} className={`card-slot ${drawnCard ? 'dealt' : ''}`}>
+                {cardData ? (
+                  <motion.div
+                    className="dealt-card"
+                    initial={{ y: 300, scale: 0.5, rotate: 45, opacity: 0 }}
+                    animate={{ y: 0, scale: 1, rotate: 0, opacity: 1 }}
+                    transition={{ duration: 0.8, ease: [0.175, 0.885, 0.32, 1.275] }}
+                  >
+                    <div className="dealt-card-inner">
+                      <img
+                        src={getCardImagePath(cardData.id, cardDeck)}
+                        alt={cardData.chineseName}
+                        className={`dealt-card-image ${drawnCard.orientation === 'reversed' ? 'reversed' : ''}`}
+                        key={`${cardData.id}-${cardDeck}`}
+                        onError={(e) => { (e.target as HTMLImageElement).src = '/cards/back.png'; }}
+                      />
+                      <span className="dealt-name">{cardData.chineseName}</span>
+                      {drawnCard.orientation === 'reversed' && <span className="reversed-badge">逆位</span>}
+                    </div>
+                  </motion.div>
+                ) : (
+                  <div className="slot-placeholder">
+                    <Sparkles size={28} className="slot-icon" />
+                    <span className="slot-label">{pos.label}</span>
+                  </div>
+                )}
+                <span className="position-label">{pos.label}</span>
               </motion.div>
-            )}
-          </AnimatePresence>
+            );
+          })}
+        </div>
 
-          {/* 用户感受输入 */}
-          {showFeelingInput && !hasSubmittedFeeling && (
+        {!showResult && (
+          <motion.button
+            className="draw-btn"
+            onClick={handleDraw}
+            disabled={isDrawing}
+            whileTap={{ scale: 0.96 }}
+          >
+            {isDrawing ? (
+              <span className="draw-loading">抽牌中...</span>
+            ) : (
+              <>
+                <MoonStar size={18} />
+                开始占卜
+              </>
+            )}
+          </motion.button>
+        )}
+
+        <AnimatePresence>
+          {showResult && (
             <motion.div
-              className="feeling-input-section card-glass"
+              className="interpretation"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
             >
-              <label>看到这个牌阵，你的第一感受是什么？</label>
-              <textarea
-                value={userFeeling}
-                onChange={(e) => setUserFeeling(e.target.value)}
-                placeholder="例如：我看到第一张牌就感到一种压迫感，好像有什么东西在逼近..."
-                aria-label="输入你对牌阵的感受"
-                className="feeling-textarea"
-                rows={3}
-              />
+              <h3 className="interp-title">
+                <Sparkles size={16} />
+                AI 解读
+              </h3>
+
+              {isInterpreting ? (
+                <div className="interp-loading">
+                  <div className="loading-spinner" />
+                  <p>正在解读牌意...</p>
+                </div>
+              ) : interpretation ? (
+                <div className="interp-content">
+                  <p>{interpretation}</p>
+                </div>
+              ) : null}
+
+              <button className="redo-btn" onClick={resetSpread}>
+                重新占卜
+              </button>
             </motion.div>
           )}
+        </AnimatePresence>
+      </main>
 
-          {/* Interpret Button */}
-          {!interpretation && (
-            <motion.button
-              className="interpret-btn btn-primary"
-              onClick={handleInterpret}
-              disabled={isInterpreting}
-              whileTap={{ scale: 0.95 }}
-            >
-              {isInterpreting ? (
-                <>
-                  <div className="spinner" />
-                  正在解读...
-                </>
-              ) : (
-                <>
-                  <MessageCircle size={18} />
-                  获取 AI 解读
-                </>
-              )}
-            </motion.button>
-          )}
-
-          <button className="btn-secondary" onClick={handleDraw}>
-            <Shuffle size={16} />
-            重新抽牌
-          </button>
-        </motion.div>
-      )}
-          <BottomNav />
+      <BottomNav />
     </div>
   );
 }

@@ -2,96 +2,123 @@ import { useState } from 'react';
 import BottomNav from '../components/BottomNav';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Search, BookOpen } from 'lucide-react';
-import { tarotCards, majorArcana, minorArcana } from '../data/tarotCards';
+import { Search, X } from 'lucide-react';
+import { tarotCards, getCardImagePath } from '../data/tarotCards';
+import { useMagicParticles } from '../hooks/useMagicParticles';
 import { useAppStore } from '../store/useAppStore';
+import type { TarotCard } from '../types';
 import './CardLibraryPage.scss';
+
+type FilterType = 'all' | 'major' | 'wands' | 'cups' | 'swords' | 'pentacles';
 
 export default function CardLibraryPage() {
   const navigate = useNavigate();
-  const { progress } = useAppStore();
-  const [filter, setFilter] = useState<'all' | 'major' | 'minor'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const cardDeck = useAppStore((state) => state.cardDeck);
 
-  const filteredCards = tarotCards.filter((card) => {
-    const matchesFilter = filter === 'all' || (filter === 'major' ? card.arcana === 'major' : card.arcana !== 'major');
-    const matchesSearch = card.chineseName.includes(searchQuery) || card.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesFilter && matchesSearch;
+  // Initialize magic particles with gold color for library page
+  useMagicParticles({ color: 'var(--accent-gold)', count: 6 });
+
+  const filters: { key: FilterType; label: string }[] = [
+    { key: 'all', label: '全部' },
+    { key: 'major', label: '大阿卡纳' },
+    { key: 'wands', label: '权杖' },
+    { key: 'cups', label: '圣杯' },
+    { key: 'swords', label: '宝剑' },
+    { key: 'pentacles', label: '星币' },
+  ];
+
+  const filteredCards = tarotCards.filter((card: TarotCard) => {
+    if (activeFilter !== 'all') {
+      if (activeFilter === 'major' && card.arcana !== 'major') return false;
+      if (activeFilter !== 'major' && card.suit !== activeFilter) return false;
+    }
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      return (
+        card.chineseName.toLowerCase().includes(q) ||
+        card.name.toLowerCase().includes(q) ||
+        card.keywords.some(k => k.toLowerCase().includes(q))
+      );
+    }
+    return true;
   });
 
   return (
-    <div className="library-page page-container">
-      <div className="library-header">
-        <button className="back-btn" aria-label="返回" onClick={() => navigate(-1)}>
-          <ArrowLeft size={20} />
-        </button>
-        <h1>卡牌百科</h1>
-      </div>
+    <div className="library-page">
+      <header className="library-header">
+        <h1 className="header-title">Arcanum</h1>
+        <div className="search-bar">
+          <Search size={16} className="search-icon" />
+          <input
+            type="text"
+            placeholder="搜索卡牌..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="search-input"
+          />
+          {searchQuery && (
+            <button className="search-clear" onClick={() => setSearchQuery('')}>
+              <X size={14} />
+            </button>
+          )}
+        </div>
 
-      <div className="search-bar">
-        <Search size={18} className="search-icon" />
-        <input
-          type="text"
-          placeholder="搜索卡牌名称..."
-          aria-label="搜索卡牌名称"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="search-input"
-        />
-      </div>
+        <nav className="filter-tabs">
+          {filters.map(f => (
+            <button
+              key={f.key}
+              className={`filter-tab ${activeFilter === f.key ? 'active' : ''}`}
+              onClick={() => setActiveFilter(f.key)}
+            >
+              {f.label}
+            </button>
+          ))}
+        </nav>
+      </header>
 
-      <div className="filter-tabs">
-        {(['all', 'major', 'minor'] as const).map((f) => (
-          <button
-            key={f}
-            className={`filter-tab ${filter === f ? 'active' : ''}`}
-            onClick={() => setFilter(f)}
-            aria-label={`筛选${f === 'all' ? '全部' : f === 'major' ? '大阿卡纳' : '小阿卡纳'}卡牌`}
-            aria-pressed={filter === f}
-          >
-            {f === 'all' ? '全部' : f === 'major' ? '大阿卡纳' : '小阿卡纳'}
-            <span className="count">
-              {f === 'all' ? tarotCards.length : f === 'major' ? majorArcana.length : minorArcana.length}
-            </span>
-          </button>
-        ))}
-      </div>
+      <main className="library-main">
+        <div className="card-count">{filteredCards.length} 张卡牌</div>
 
-      <div className="cards-grid">
-        {filteredCards.map((card, index) => {
-          const isLearned = progress.learnedCards.includes(card.id);
-          return (
+        <div className="card-grid">
+          {filteredCards.map((card: TarotCard) => (
             <motion.div
               key={card.id}
-              className={`card-item ${isLearned ? 'learned' : ''}`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.03 }}
+              className="card-tile"
               onClick={() => navigate(`/learn/${card.id}`)}
+              whileTap={{ scale: 0.95 }}
+              layout
             >
-              <div className="card-image-wrapper">
-                <img
-                  src={card.image}
-                  alt={card.chineseName}
-                  loading="lazy"
-                  className="card-image"
-                  onError={(e) => { (e.target as HTMLImageElement).src = '/cards/00-the-fool.jpg'; }}
-                />
+              <div className="tile-arcana-badge">
+                {card.arcana === 'major' ? '大阿' : card.suit?.slice(0, 1).toUpperCase()}
               </div>
-              <div className="card-info">
-                <h4>{card.chineseName}</h4>
-                <p className="card-suit">{card.arcana === 'major' ? '大阿卡纳' : card.suit}</p>
+              <img
+                src={getCardImagePath(card.id, cardDeck)}
+                alt={card.chineseName}
+                className="tile-card-image"
+                loading="lazy"
+                key={`${card.id}-${cardDeck}`}
+              />
+              <div className="tile-info">
+                <span className="tile-name">{card.chineseName}</span>
+                <span className="tile-number">
+                  {card.arcana === 'major' ? `${card.number}` : `${card.number}`}
+                </span>
               </div>
-              {isLearned && (
-                <div className="learned-badge">
-                  <BookOpen size={14} />
-                </div>
-              )}
             </motion.div>
-          );
-        })}
-      </div>
-          <BottomNav />
+          ))}
+        </div>
+
+        {filteredCards.length === 0 && (
+          <div className="empty-state">
+            <span className="empty-emoji">🔍</span>
+            <p>未找到匹配的卡牌</p>
+          </div>
+        )}
+      </main>
+
+      <BottomNav />
     </div>
   );
 }

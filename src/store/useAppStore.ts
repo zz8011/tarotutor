@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { UserProgress, LearningSession, ChatMessage, DiaryEntry, Achievement, CardSpread } from '../types';
 import { appStorage } from '../platform/storage';
+import { setActiveDeck } from '../data/tarotCards';
 
 interface AppState {
   userName: string;
@@ -31,6 +32,9 @@ interface AppState {
 
   currentView: string;
   setCurrentView: (view: string) => void;
+
+  cardDeck: 'eastern' | 'chinese-ink';
+  setCardDeck: (deck: 'eastern' | 'chinese-ink') => void;
 }
 
 const defaultProgress: UserProgress = {
@@ -143,6 +147,12 @@ export const useAppStore = create<AppState>()(
 
       currentView: 'home',
       setCurrentView: (view) => set({ currentView: view }),
+
+      cardDeck: 'eastern' as 'eastern' | 'chinese-ink',
+      setCardDeck: (deck) => {
+        set({ cardDeck: deck });
+        setActiveDeck(deck);
+      },
     }),
     {
       name: 'tarot-tutor-storage',
@@ -154,7 +164,13 @@ export const useAppStore = create<AppState>()(
         personalityType: state.personalityType,
         primaryMentor: state.primaryMentor,
         spreads: state.spreads,
+        cardDeck: state.cardDeck,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state?.cardDeck) {
+          setActiveDeck(state.cardDeck);
+        }
+      },
     }
   )
 );

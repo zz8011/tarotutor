@@ -18,7 +18,7 @@ const CLOUD_FUNCTIONS = {
     welcome: 'tarot-welcome',
   },
   dev: {
-    baseURL: import.meta.env.VITE_API_PROXY_URL || 'http://localhost:3001',
+    baseURL: import.meta.env.VITE_API_PROXY_URL || '',
   },
 };
 
@@ -42,7 +42,8 @@ const AI_CONFIG = {
 };
 
 function getApiKey(config: typeof AI_CONFIG.primary): string {
-  const viteKey = import.meta.env[`VITE_${config.apiKeyEnv}`];
+  const envKey = `VITE_${config.apiKeyEnv}`;
+  const viteKey = import.meta.env[envKey];
   if (viteKey) return viteKey as string;
   if (typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).__HERMES_ENV__) {
     const env = (window as unknown as Record<string, unknown>).__HERMES_ENV__ as Record<string, string>;
@@ -81,7 +82,7 @@ interface ChatCompletionResponse {
 declare const wx: any | undefined;
 
 const isWechat = typeof wx !== 'undefined' && typeof wx.request === 'function';
-const isDev = import.meta.env.DEV;
+const proxyBaseURL = CLOUD_FUNCTIONS.dev.baseURL;
 
 /**
  * 通用云函数调用封装
@@ -111,8 +112,11 @@ async function callCloudProxy(
   }
 
   // 开发环境：HTTP 请求到本地代理
-  const baseURL = CLOUD_FUNCTIONS.dev.baseURL;
-  const response = await fetch(`${baseURL}/api/${name}`, {
+  if (!proxyBaseURL) {
+    throw new Error('未配置 API 代理地址');
+  }
+
+  const response = await fetch(`${proxyBaseURL}/api/${name}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ messages, ...options }),
@@ -150,8 +154,8 @@ export async function chatCompletion(
   const config = AI_CONFIG[model];
   const apiKey = getApiKey(config);
 
-  // 优先使用云函数代理（生产环境）
-  if (!isDev || isWechat) {
+  // 微信环境使用云函数；Web 端只有显式配置代理地址时才走代理。
+  if (isWechat || proxyBaseURL) {
     return callCloudProxy('tarot-chat', messages, { temperature, maxTokens, model });
   }
 
@@ -412,7 +416,13 @@ export function buildSpreadInterpretationPrompt(
 2. 牌与牌之间的关联和故事线
 3. 综合建议和行动指引
 4. 保持温暖鼓励的语气，不要太宿命论
-5. 最后给出一个简短有力的一句话总结，点出核心启示`;
+5. 最后给出一个简短有力的一句话总结，点出核心启示
+
+输出格式要求：
+- 使用 Markdown 小标题组织内容，例如「## 核心启示」「## 牌位解读」「## 关联故事线」「## 行动建议」「## 一句话总结」
+- 每个小标题下写 1-2 个自然段
+- 段落之间必须空一行
+- 不要把所有内容写成一整段`;
 
   return [
     { role: 'system', content: systemPrompt },
@@ -477,7 +487,7 @@ function mockResponse(messages: { role: string; content: string }[]): string {
   const lastMessage = messages[messages.length - 1]?.content || '';
 
   if (lastMessage.includes('今日抽到')) {
-    return `✨ 今天的能量非常特别！
+    return `今天的能量非常特别。
 
 这张牌出现在你的今日指引中，意味着宇宙正在向你传递一个重要的信息。它提醒你关注当下的内在状态，倾听直觉的声音。
 
@@ -485,11 +495,11 @@ function mockResponse(messages: { role: string; content: string }[]): string {
 
 小行动：今天遇到选择时，先深呼吸三次，再做决定。
 
-愿你拥有充满觉察的一天 🌙`;
+愿你拥有充满觉察的一天。`;
   }
 
   if (lastMessage.includes('牌阵')) {
-    return `🔮 这个牌阵为你揭示了一个有趣的故事：
+    return `这个牌阵为你揭示了一个有趣的故事：
 
 第一张牌代表你当前的状态，显示你正处于一个转变的节点。第二张牌揭示了潜在的挑战，但这正是成长的机会。第三张牌指向未来的可能性，只要你保持开放的心态。
 
@@ -497,11 +507,11 @@ function mockResponse(messages: { role: string; content: string }[]): string {
 
 综合建议：信任自己的直觉，你已经有答案了。今天适合做一些创造性的活动，让能量自然流动。
 
-记住，塔罗是指引而非预言，你始终拥有选择的自由 ✨`;
+记住，塔罗是指引而非预言，你始终拥有选择的自由。`;
   }
 
   if (lastMessage.includes('学习')) {
-    return `🌟 这是一个很好的学习时刻！
+    return `这是一个很好的学习时刻。
 
 这张牌的核心信息是关于内在平衡。当你在学习塔罗时，不仅要记住牌意，更要感受牌面传递的能量。
 
@@ -509,10 +519,10 @@ function mockResponse(messages: { role: string; content: string }[]): string {
 
 实践建议：今天试着用这张牌为一位朋友做简单的单牌解读，实践是最好的老师。
 
-你最近有遇到什么让你联想到这张牌的事情吗？ 🤔`;
+你最近有遇到什么让你联想到这张牌的事情吗？`;
   }
 
-  return `🌙 我感受到了你的能量。
+  return `我感受到了你的能量。
 
 这是一个值得深入探索的话题。塔罗牌不仅仅是符号和意义的组合，更是你内在智慧的镜子。
 
@@ -520,7 +530,7 @@ function mockResponse(messages: { role: string; content: string }[]): string {
 
 下一步：试着把这张牌放在床头，睡前回想它的意象，看看梦境会带给你什么启示。
 
-有什么特别想深入探讨的吗？ ✨`;
+有什么特别想深入探讨的吗？`;
 }
 
 // ============================================================

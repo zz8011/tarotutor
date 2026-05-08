@@ -43,12 +43,23 @@ export default class ErrorBoundary extends Component<Props, State> {
           minHeight: '100vh',
           padding: '2rem',
           textAlign: 'center',
-          background: 'linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 100%)',
-          color: '#d4c5a9',
+          background: 'linear-gradient(145deg, #0f0d0a 0%, #1c1711 58%, #16201d 100%)',
+          color: '#e9ddc8',
           fontFamily: 'system-ui, -apple-system, sans-serif',
         }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🌙</div>
-          <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: '#c9a96e' }}>
+          <div style={{
+            width: '56px',
+            height: '56px',
+            borderRadius: '50%',
+            border: '1px solid rgba(212, 176, 102, 0.45)',
+            display: 'grid',
+            placeItems: 'center',
+            marginBottom: '1rem',
+            color: '#d4b066',
+            fontFamily: 'Georgia, serif',
+            fontSize: '1.5rem',
+          }}>月</div>
+          <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: '#d4b066' }}>
             神秘力量中断了连接
           </h2>
           <p style={{ fontSize: '0.9rem', marginBottom: '1.5rem', color: '#8b7355' }}>

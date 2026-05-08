@@ -8,9 +8,14 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+.tools
 dist
 dist-ssr
 *.local
+*.tgz
+browser-test-*.png
+browser-test-*.css
+.edge-profile*
 
 # Editor directories and files
 .vscode/*
@@ -22,3 +27,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.superdesign
+.claude
+src/**/*.css.map

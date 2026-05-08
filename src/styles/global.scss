@@ -1,50 +1,86 @@
-@use "sass:color";
+// ===== Mystic Tarot Academy - Global Styles =====
+// Based on Superdesign AI Design System
 
-// ===== Mystic mobile design tokens =====
-:root {
-  --bg-deep: #110c16;
-  --bg-velvet: #1d1220;
-  --bg-card: rgba(34, 23, 39, 0.88);
-  --bg-elevated: rgba(49, 35, 53, 0.92);
-  --bg-hover: rgba(65, 45, 66, 0.96);
+@import './tokens.css';
 
-  --primary-purple: #8f5cf7;
-  --primary-glow: #c8a7ff;
-  --accent-gold: #e9b85d;
-  --accent-moon: #f4ead8;
-  --accent-rose: #d95f8d;
-  --accent-emerald: #5ac8a0;
-  --accent-cyan: #67d7d1;
-
-  --text-primary: #fff8ed;
-  --text-secondary: #d5c6be;
-  --text-muted: #9e8f91;
-  --text-gold: #f0c878;
-
-  --border-subtle: rgba(240, 200, 120, 0.16);
-  --border-glow: rgba(103, 215, 209, 0.34);
-
-  --shadow-glow: 0 18px 48px rgba(103, 215, 209, 0.12), 0 0 28px rgba(233, 184, 93, 0.12);
-  --shadow-card: 0 18px 42px rgba(0, 0, 0, 0.36);
-
-  --font-display: 'Noto Serif SC', 'Georgia', serif;
-  --font-body: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-full: 9999px;
-
-  --page-max: 480px;
-  --nav-height: 72px;
-}
-
-// ===== 全局样式 =====
-* {
+// Reset
+*, *::before, *::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
+
+:root {
+  // ---- Colors ----
+  --bg-deep: #0f0d0a;
+  --bg-velvet: #17130e;
+  --bg-card: rgba(28, 23, 17, 0.9);
+  --bg-elevated: #1a1612;
+  --bg-input: rgba(28, 23, 17, 0.8);
+
+  --color-primary: #d4b066;
+  --color-primary-dark: #8b6e37;
+  --color-emerald: #6fae9b;
+  --color-emerald-bright: #10b981;
+  --color-rose: #a76552;
+  --color-cyan: #8dc7b5;
+
+  --text-primary: #f0f0f0;
+  --text-secondary: #c8bba5;
+  --text-muted: #948672;
+  --text-gold: #d4b066;
+
+  --border-subtle: rgba(212, 176, 102, 0.1);
+  --border-default: rgba(212, 176, 102, 0.15);
+  --border-hover: rgba(212, 176, 102, 0.3);
+  --border-active: rgba(212, 176, 102, 0.4);
+
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-gold: 0 0 20px rgba(212, 176, 102, 0.4);
+  --shadow-gold-soft: 0 0 10px rgba(212, 176, 102, 0.3);
+  --shadow-emerald: 0 0 10px rgba(111, 174, 155, 0.5);
+
+  // ---- Typography ----
+  --font-display: 'Cinzel', 'Noto Serif SC', Georgia, serif;
+  --font-heading: 'Noto Serif SC', Georgia, serif;
+  --font-body: 'Noto Sans SC', PingFang SC, sans-serif;
+
+  --text-xs: 10px;
+  --text-sm: 12px;
+  --text-base: 14px;
+  --text-lg: 16px;
+  --text-xl: 18px;
+  --text-2xl: 20px;
+  --text-3xl: 24px;
+  --text-4xl: 30px;
+
+  // ---- Spacing ----
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  // ---- Radius (Superdesign spec: 6px/8px/10px) ----
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  // ---- Layout ----
+  --page-max: 480px;
+  --nav-height: 72px;
+
+  // ---- Transitions ----
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-bounce: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+// ---- Google Fonts ----
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
 
 html, body, #root {
   width: 100%;
@@ -55,149 +91,160 @@ html, body, #root {
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  background:
-    linear-gradient(160deg, rgba(17, 12, 22, 0.98), rgba(36, 21, 38, 0.96) 54%, rgba(29, 35, 33, 0.96)),
-    repeating-linear-gradient(90deg, rgba(240, 200, 120, 0.035) 0 1px, transparent 1px 76px),
-    repeating-linear-gradient(0deg, rgba(103, 215, 209, 0.025) 0 1px, transparent 1px 84px);
-  pointer-events: none;
-  z-index: 0;
-}
-
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background-image:
-    radial-gradient(circle, rgba(244, 234, 216, 0.8) 0 1px, transparent 1.5px),
-    radial-gradient(circle, rgba(233, 184, 93, 0.55) 0 1px, transparent 1.5px);
-  background-position: 20px 26px, 64px 88px;
-  background-size: 112px 132px, 156px 168px;
-  opacity: 0.18;
-}
-
-// 滚动条
+// Scrollbar
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 3px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-deep);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--primary-purple);
-  border-radius: var(--radius-full);
+  background: rgba(212, 176, 102, 0.3);
+  border-radius: 10px;
 }
 
-// ===== 通用组件类 =====
+// ---- Utility Classes ----
 .page-container {
-  position: relative;
-  z-index: 1;
-  max-width: var(--page-max);
-  margin: 0 auto;
-  padding: 20px 16px calc(var(--nav-height) + env(safe-area-inset-bottom) + 20px);
   min-height: 100vh;
-}
-
-.card-glass {
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  backdrop-filter: blur(12px);
-  box-shadow: var(--shadow-card);
-  transition: all 0.3s ease;
-
-  &:hover {
-    border-color: var(--border-glow);
-    box-shadow: var(--shadow-glow);
-  }
-}
-
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 48px;
-  padding: 14px 24px;
-  background: linear-gradient(135deg, var(--accent-gold), var(--primary-glow) 46%, var(--accent-cyan));
-  color: #160f18;
-  border: none;
-  border-radius: var(--radius-sm);
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 12px 26px rgba(233, 184, 93, 0.18);
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 16px 34px rgba(103, 215, 209, 0.18);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-}
-
-.btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px 24px;
-  background: transparent;
-  color: var(--text-primary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-
-  &:hover {
-    border-color: var(--border-glow);
-    background: var(--bg-elevated);
-  }
+  padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + 16px);
+  position: relative;
 }
 
 .text-gradient {
-  background: linear-gradient(135deg, var(--accent-moon), var(--accent-gold) 48%, var(--accent-cyan));
+  background: linear-gradient(135deg, #f3e5ab 0%, #d4b066 50%, #8b6e37 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-.glow-text {
-  text-shadow: 0 0 20px rgba(167, 139, 250, 0.5);
+.glass-dark {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(212, 176, 102, 0.1);
+  backdrop-filter: blur(10px);
 }
 
-// ===== 加载动画 =====
+.glass-panel {
+  background: rgba(45, 36, 29, 0.4);
+  border: 1px solid rgba(212, 175, 55, 0.15);
+  backdrop-filter: blur(10px);
+}
+
+.gold-glow {
+  text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+}
+
+// ---- Card Flip Animation ----
+.card-container {
+  perspective: 1000px;
+}
+
+.card-inner {
+  transition: transform 0.8s var(--ease-bounce);
+  transform-style: preserve-3d;
+}
+
+.card-flipped .card-inner {
+  transform: rotateY(180deg);
+}
+
+.card-front, .card-back {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.card-back {
+  transform: rotateY(180deg);
+}
+
+// ---- Star Animation ----
+@keyframes twinkle {
+  0%, 100% { opacity: 0; transform: scale(0.5); }
+  50% { opacity: 0.8; transform: scale(1.2); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) rotate(45deg); }
+}
+
+@keyframes rise {
+  0% { transform: translateY(0) scale(0); opacity: 0; }
+  50% { opacity: 0.6; }
+  100% { transform: translateY(-100px) scale(1.5); opacity: 0; }
+}
+
+@keyframes deal-fly {
+  0% { transform: translateY(300px) scale(0.5) rotate(45deg); opacity: 0; }
+  100% { transform: translateY(0) scale(1) rotate(0); opacity: 1; }
+}
+
+// ---- Button Styles ----
+.btn-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 32px;
+  background: linear-gradient(135deg, #d4b066 0%, #8b6e37 100%);
+  color: #0f0d0a;
+  font-weight: 700;
+  border-radius: var(--radius-full);
+  border: none;
+  cursor: pointer;
+  font-size: var(--text-base);
+  transition: all 0.3s var(--ease-out);
+
+  &:active {
+    transform: scale(0.96);
+  }
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: rgba(212, 176, 102, 0.05);
+  color: var(--color-primary);
+  border: 1px solid rgba(212, 176, 102, 0.2);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  transition: all 0.3s var(--ease-out);
+
+  &:active {
+    transform: scale(0.96);
+    background: rgba(212, 176, 102, 0.1);
+  }
+}
+
+// ---- Loading ----
 .loading-screen {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  gap: 20px;
-  color: var(--text-secondary);
-  position: relative;
-  z-index: 1;
+  gap: 16px;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
 
   .loading-spinner {
-    width: 48px;
-    height: 48px;
-    border: 3px solid var(--border-subtle);
-    border-top-color: var(--primary-purple);
+    width: 32px;
+    height: 32px;
+    border: 2px solid rgba(212, 176, 102, 0.2);
+    border-top-color: var(--color-primary);
     border-radius: 50%;
-    animation: spin 1s linear infinite;
+    animation: spin 0.8s linear infinite;
   }
 }
 
@@ -205,75 +252,76 @@ body::after {
   to { transform: rotate(360deg); }
 }
 
-// ===== 卡牌翻转动画 =====
-.card-flip {
-  perspective: 1000px;
-
-  .card-inner {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-    transform-style: preserve-3d;
-  }
-
-  &.flipped .card-inner {
-    transform: rotateY(180deg);
-  }
-
-  .card-front,
-  .card-back {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    backface-visibility: hidden;
-    border-radius: var(--radius-md);
-  }
-
-  .card-back {
-    transform: rotateY(180deg);
-  }
+// ---- Magic Particle Click Effect ----
+.magic-particle {
+  position: fixed;
+  width: 4px;
+  height: 4px;
+  background: radial-gradient(circle, var(--accent-gold) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  animation: particle-fly 1s ease-out forwards;
 }
 
-// ===== 浮动动画 =====
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-
-.float-animation {
-  animation: float 3s ease-in-out infinite;
-}
-
-// ===== 脉冲光晕 =====
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(124, 58, 237, 0.3); }
-  50% { box-shadow: 0 0 40px rgba(124, 58, 237, 0.5); }
-}
-
-.pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-// ===== 渐入动画 =====
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
+@keyframes particle-fly {
+  0% {
+    transform: translate(0, 0) scale(1);
     opacity: 1;
-    transform: translateY(0);
+  }
+  100% {
+    transform: translate(var(--tx), var(--ty)) scale(0);
+    opacity: 0;
   }
 }
 
-.fade-in-up {
-  animation: fadeInUp 0.6s ease-out forwards;
+// ---- Firefly Animation ----
+.firefly {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: var(--accent-gold);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--accent-gold), 0 0 12px var(--accent-emerald);
+  opacity: 0;
+  animation: firefly-float 4s ease-in-out infinite;
 }
 
-// ===== 响应式 =====
-@media (max-width: 480px) {
-  .page-container {
-    padding: 16px 12px calc(var(--nav-height) + env(safe-area-inset-bottom) + 18px);
+@keyframes firefly-float {
+  0%, 100% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.5);
   }
+  25% {
+    opacity: 0.8;
+    transform: translate(var(--move-x), var(--move-y)) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(calc(var(--move-x) * 0.5), calc(var(--move-y) * 1.5)) scale(1.2);
+  }
+  75% {
+    opacity: 0.6;
+    transform: translate(calc(var(--move-x) * 1.5), calc(var(--move-y) * 0.5)) scale(0.8);
+  }
+}
+
+// ---- Border Glow Effect ----
+.border-glow {
+  border: 1px solid var(--border-glow);
+  box-shadow: 0 0 8px var(--border-glow);
+}
+
+// ---- Moonlight White Text ----
+.text-moon {
+  color: var(--accent-moon);
+}
+
+// ---- Primary Purple (Bronze) ----
+.text-bronze {
+  color: var(--primary-purple);
+}
+
+.bg-bronze {
+  background-color: var(--primary-purple);
 }

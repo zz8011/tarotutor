@@ -37,6 +37,7 @@ export interface Mentor {
   name: string;
   chineseName: string;
   avatar: string;
+  avatarImage?: string;
   personality: string;
   teachingStyle: string;
   specialties: string[];
