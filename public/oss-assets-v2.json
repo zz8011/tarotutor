@@ -1,10 +1,10 @@
 {
   "generatedAt": "2026-05-08T22:48:25.435279+00:00",
   "expiresIn": 604800,
-  "cardBack": "https://scripter.oss-cn-shanghai.aliyuncs.com/taro%2Fcards%2Fchinese-ink%2Fcard-back.jpg?OSSAccessKeyId=LTAI5tGqkNF6Q78rYWu7fuH2&Expires=1778885364&Signature=oepDGAIyCaZ5Syduzu6uVySkgLk%3D",
+  "cardBack": "./assets/card-backs/chinese-ink-tarot/card-back.png",
   "cardBacks": {
-    "eastern": "./assets/card-backs/eastern.svg",
-    "chinese-ink": "./assets/card-backs/chinese-ink.svg"
+    "eastern": "./assets/card-backs/eastern-mystic-tarot/card-back.png",
+    "chinese-ink": "./assets/card-backs/chinese-ink-tarot/card-back.png"
   },
   "cards": {
     "chinese-ink/00-the-fool": "https://scripter.oss-cn-shanghai.aliyuncs.com/taro%2Fcards%2Fchinese-ink%2F00-the-fool.jpg?OSSAccessKeyId=LTAI5tGqkNF6Q78rYWu7fuH2&Expires=1778885305&Signature=Q0zt4MoftZaG4qDkMQxpw3r1SK0%3D",

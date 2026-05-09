@@ -10,8 +10,8 @@ type AssetManifest = {
 let manifest: AssetManifest | null = null;
 const localFallbackImage = new URL('../assets/hero.png', import.meta.url).href;
 const localCardBackAssets: Record<AssetDeck, string> = {
-  eastern: getPublicAssetPath('assets/card-backs/eastern.svg'),
-  'chinese-ink': getPublicAssetPath('assets/card-backs/chinese-ink.svg'),
+  eastern: getPublicAssetPath('assets/card-backs/eastern-mystic-tarot/card-back.png'),
+  'chinese-ink': getPublicAssetPath('assets/card-backs/chinese-ink-tarot/card-back.png'),
 };
 
 export async function loadAssetManifest() {
@@ -48,5 +48,9 @@ export function resolveMentorAsset(mentorId: string) {
 }
 
 export function resolveCardBackAsset(deck: AssetDeck = 'eastern') {
-  return manifest?.cardBacks?.[deck] || (deck === 'chinese-ink' ? manifest?.cardBack : undefined) || localCardBackAssets[deck];
+  return (
+    manifest?.cardBacks?.[deck] ||
+    (deck === 'chinese-ink' ? manifest?.cardBack : undefined) ||
+    localCardBackAssets[deck]
+  );
 }
