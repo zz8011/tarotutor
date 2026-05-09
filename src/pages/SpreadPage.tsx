@@ -193,7 +193,7 @@ export default function SpreadPage() {
                         alt={cardData.chineseName}
                         className={`dealt-card-image ${drawnCard.orientation === 'reversed' ? 'reversed' : ''}`}
                         key={`${cardData.id}-${cardDeck}`}
-                        onError={(e) => { (e.target as HTMLImageElement).src = resolveCardBackAsset(); }}
+                        onError={(e) => { (e.target as HTMLImageElement).src = resolveCardBackAsset(cardDeck); }}
                       />
                       <span className="dealt-name">{cardData.chineseName}</span>
                       {drawnCard.orientation === 'reversed' && <span className="reversed-badge">逆位</span>}

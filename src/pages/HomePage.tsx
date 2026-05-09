@@ -4,6 +4,7 @@ import { Sparkles, BookOpen, Star, Compass, User, MoonStar, WandSparkles } from 
 import BottomNav from '../components/BottomNav';
 import { useAppStore } from '../store/useAppStore';
 import { tarotCards, getCardById, getCardImagePath } from '../data/tarotCards';
+import { resolveCardBackAsset } from '../data/assetManifest';
 import { useMagicParticles } from '../hooks/useMagicParticles';
 import { useFireflies } from '../hooks/useFireflies';
 import { useDailyInsight } from '../hooks/useDailyInsight';
@@ -114,9 +115,10 @@ export default function HomePage() {
           <div className={`card-container ${isFlipped ? 'card-flipped' : ''}`} onClick={handleDrawDaily}>
             <div className="card-inner">
               <div className="card-front daily-card">
-                <div className="card-back-design">
-                  <div className="card-inner-border">
-                    <MoonStar size={32} className="card-icon" />
+                <div className="card-back-art">
+                  <img src={resolveCardBackAsset(cardDeck)} alt="塔罗牌背" className="daily-card-back-image" />
+                  <div className="card-back-caption">
+                    <MoonStar size={22} className="card-icon" />
                     <span className="card-hint">点击翻开灵感</span>
                   </div>
                 </div>
