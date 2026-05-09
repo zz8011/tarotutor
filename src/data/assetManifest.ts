@@ -9,7 +9,7 @@ const localFallbackImage = new URL('../assets/hero.png', import.meta.url).href;
 
 export async function loadAssetManifest() {
   try {
-    const response = await fetch('./oss-assets.json', { cache: 'no-store' });
+    const response = await fetch('./oss-assets-v2.json', { cache: 'no-store' });
     if (!response.ok) return;
     const data = await response.json() as AssetManifest;
     manifest = data;
