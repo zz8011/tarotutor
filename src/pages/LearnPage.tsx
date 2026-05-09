@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -299,22 +299,39 @@ export default function LearnPage() {
 
   const activeSession = currentSession?.cardId === card.id ? currentSession : null;
   const activeRecord = studyJournal.records[String(card.id)];
-  const initialStage = (activeSession?.lessonStage || activeRecord?.stage || 'observe') as StudyStage;
+  const activeJournalMatchesCard = studyJournal.activeCardId === card.id;
+  const initialStage = (
+    activeSession?.lessonStage ||
+    activeRecord?.stage ||
+    (activeJournalMatchesCard ? studyJournal.activeStage : 'observe')
+  ) as StudyStage;
   const initialOrientation: Orientation =
-    activeSession?.orientation || activeRecord?.orientation || studyJournal.activeOrientation || 'upright';
+    activeSession?.orientation ||
+    activeRecord?.orientation ||
+    (activeJournalMatchesCard ? studyJournal.activeOrientation : 'upright');
 
   const [stage, setStage] = useState<StudyStage>(initialStage);
   const [orientation, setOrientation] = useState<Orientation>(initialOrientation);
-  const [reflection, setReflection] = useState(activeSession?.reflection || activeRecord?.reflection || '');
+  const [reflection, setReflection] = useState(
+    activeSession?.reflection || activeRecord?.reflection || (activeJournalMatchesCard ? studyJournal.activeReflection : '')
+  );
   const [symbolObservation, setSymbolObservation] = useState(
-    activeSession?.symbolObservation || activeRecord?.symbolObservation || studyJournal.activeSymbolObservation || ''
+    activeSession?.symbolObservation ||
+      activeRecord?.symbolObservation ||
+      (activeJournalMatchesCard ? studyJournal.activeSymbolObservation : '') ||
+      ''
   );
   const [scenarioAnswer, setScenarioAnswer] = useState(
-    activeSession?.scenarioAnswer || activeRecord?.scenarioAnswer || studyJournal.activeScenarioAnswer || ''
+    activeSession?.scenarioAnswer ||
+      activeRecord?.scenarioAnswer ||
+      (activeJournalMatchesCard ? studyJournal.activeScenarioAnswer : '') ||
+      ''
   );
-  const [followUp, setFollowUp] = useState(activeSession?.followUp || activeRecord?.followUp || '');
+  const [followUp, setFollowUp] = useState(
+    activeSession?.followUp || activeRecord?.followUp || (activeJournalMatchesCard ? studyJournal.activeFollowUp : '')
+  );
   const [quizAnswers, setQuizAnswers] = useState<QuizAnswerMap>(
-    activeSession?.quizAnswers || activeRecord?.quizAnswers || studyJournal.activeQuizAnswers || {}
+    activeSession?.quizAnswers || activeRecord?.quizAnswers || (activeJournalMatchesCard ? studyJournal.activeQuizAnswers : {}) || {}
   );
   const [quizResult, setQuizResult] = useState<'correct' | 'incorrect' | null>(
     activeSession?.quizResult || activeRecord?.quizResult || null
@@ -343,40 +360,86 @@ export default function LearnPage() {
   const awaitingRecap = stage === 'quiz' && choiceQuizPassed && !quizAnswers.recap;
   const progressIndex = Math.max(stageOrder.indexOf(stage), 0);
 
-  useEffect(() => {
-    if (!currentSession || currentSession.cardId !== card.id) {
+  useLayoutEffect(() => {
+    const sessionForCard = currentSession?.cardId === card.id ? currentSession : null;
+    const recordForCard = studyJournal.records[String(card.id)];
+    const journalForCard = studyJournal.activeCardId === card.id;
+    const nextStage = (
+      sessionForCard?.lessonStage ||
+      recordForCard?.stage ||
+      (journalForCard ? studyJournal.activeStage : 'observe')
+    ) as StudyStage;
+    const nextOrientation =
+      sessionForCard?.orientation ||
+      recordForCard?.orientation ||
+      (journalForCard ? studyJournal.activeOrientation : 'upright');
+    const nextReflection =
+      sessionForCard?.reflection || recordForCard?.reflection || (journalForCard ? studyJournal.activeReflection : '') || '';
+    const nextSymbolObservation =
+      sessionForCard?.symbolObservation ||
+      recordForCard?.symbolObservation ||
+      (journalForCard ? studyJournal.activeSymbolObservation : '') ||
+      '';
+    const nextScenarioAnswer =
+      sessionForCard?.scenarioAnswer ||
+      recordForCard?.scenarioAnswer ||
+      (journalForCard ? studyJournal.activeScenarioAnswer : '') ||
+      '';
+    const nextFollowUp =
+      sessionForCard?.followUp || recordForCard?.followUp || (journalForCard ? studyJournal.activeFollowUp : '') || '';
+    const nextQuizAnswers =
+      sessionForCard?.quizAnswers || recordForCard?.quizAnswers || (journalForCard ? studyJournal.activeQuizAnswers : {}) || {};
+    const nextQuizResult = sessionForCard?.quizResult || recordForCard?.quizResult || (journalForCard ? studyJournal.activeQuizResult : null);
+    const nextMessages = sessionForCard?.messages?.length
+      ? sessionForCard.messages
+      : [buildOpeningMessage(card, mentor.chineseName, nextOrientation)];
+
+    setStage(nextStage);
+    setOrientation(nextOrientation);
+    setReflection(nextReflection);
+    setSymbolObservation(nextSymbolObservation);
+    setScenarioAnswer(nextScenarioAnswer);
+    setFollowUp(nextFollowUp);
+    setQuizAnswers(nextQuizAnswers);
+    setQuizResult(nextQuizResult);
+    setChatMessages(nextMessages);
+    setIsImageOpen(false);
+
+    if (!sessionForCard) {
       startSession(card.id, mentor.id);
-      setStudyJournal({
-        activeCardId: card.id,
-        activeStage: stage,
-        activeOrientation: orientation,
-        activeReflection: reflection,
-        activeSymbolObservation: symbolObservation,
-        activeScenarioAnswer: scenarioAnswer,
-        activeFollowUp: followUp,
-        activeQuizQuestion: quizQuestions.map((question) => question.prompt).join('\n'),
-        activeQuizOptions: quizQuestions.flatMap((question) => question.options),
-        activeQuizAnswer: quizAnswers.recap || '',
-        activeQuizAnswers: quizAnswers,
-        activeQuizResult: quizResult,
-        activeMentorId: mentor.id,
-        activeSummary: currentMeaning,
-      });
-      upsertStudyRecord(card.id, {
-        stage,
-        orientation,
-        mentorId: mentor.id,
-        reflection,
-        symbolObservation,
-        scenarioAnswer,
-        followUp,
-        quizQuestion: quizQuestions.map((question) => question.prompt).join('\n'),
-        quizOptions: quizQuestions.flatMap((question) => question.options),
-        quizAnswer: quizAnswers.recap || '',
-        quizAnswers,
-        quizResult,
-      });
     }
+
+    setStudyJournal({
+      activeCardId: card.id,
+      activeStage: nextStage,
+      activeOrientation: nextOrientation,
+      activeReflection: nextReflection,
+      activeSymbolObservation: nextSymbolObservation,
+      activeScenarioAnswer: nextScenarioAnswer,
+      activeFollowUp: nextFollowUp,
+      activeQuizQuestion: quizQuestions.map((question) => question.prompt).join('\n'),
+      activeQuizOptions: quizQuestions.flatMap((question) => question.options),
+      activeQuizAnswer: nextQuizAnswers.recap || '',
+      activeQuizAnswers: nextQuizAnswers,
+      activeQuizResult: nextQuizResult,
+      activeMentorId: mentor.id,
+      activeSummary: currentMeaning,
+    });
+
+    upsertStudyRecord(card.id, {
+      stage: nextStage,
+      orientation: nextOrientation,
+      mentorId: mentor.id,
+      reflection: nextReflection,
+      symbolObservation: nextSymbolObservation,
+      scenarioAnswer: nextScenarioAnswer,
+      followUp: nextFollowUp,
+      quizQuestion: quizQuestions.map((question) => question.prompt).join('\n'),
+      quizOptions: quizQuestions.flatMap((question) => question.options),
+      quizAnswer: nextQuizAnswers.recap || '',
+      quizAnswers: nextQuizAnswers,
+      quizResult: nextQuizResult,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [card.id, mentor.id]);
 
