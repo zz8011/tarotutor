@@ -9,7 +9,7 @@ export type Suit = 'wands' | 'cups' | 'swords' | 'pentacles';
 export type Element = 'fire' | 'water' | 'air' | 'earth';
 export type PersonalityDimension = 'intuitive_logical' | 'supportive_independent' | 'free_systematic' | 'lively_contemplative';
 export type LearningPhase = 'perception' | 'understanding' | 'application' | 'mastery';
-export type StudyStage = 'observe' | 'teach' | 'quiz' | 'mastered';
+export type StudyStage = 'observe' | 'symbols' | 'teach' | 'scenario' | 'quiz' | 'mastered';
 export type MessageRole = 'user' | 'mentor' | 'system' | 'assistant';
 
 // ---- Core Domain Types ------------------------------------
@@ -102,10 +102,13 @@ export interface LearningSession {
   lessonStage?: StudyStage;
   orientation?: 'upright' | 'reversed';
   reflection?: string;
+  symbolObservation?: string;
+  scenarioAnswer?: string;
   followUp?: string;
   quizQuestion?: string;
   quizOptions?: string[];
   quizAnswer?: string;
+  quizAnswers?: Record<string, string>;
   quizResult?: 'correct' | 'incorrect' | null;
   summary?: string;
   userFeeling: string | null;
@@ -121,10 +124,13 @@ export interface StudyRecord {
   stage: StudyStage;
   orientation: 'upright' | 'reversed';
   reflection: string;
+  symbolObservation?: string;
+  scenarioAnswer?: string;
   followUp: string;
   quizQuestion: string;
   quizOptions: string[];
   quizAnswer: string;
+  quizAnswers?: Record<string, string>;
   quizResult: 'correct' | 'incorrect' | null;
   mastered: boolean;
   reviewCount: number;
@@ -139,10 +145,13 @@ export interface StudyJournal {
   activeStage: StudyStage;
   activeOrientation: 'upright' | 'reversed';
   activeReflection: string;
+  activeSymbolObservation?: string;
+  activeScenarioAnswer?: string;
   activeFollowUp: string;
   activeQuizQuestion: string;
   activeQuizOptions: string[];
   activeQuizAnswer: string;
+  activeQuizAnswers?: Record<string, string>;
   activeQuizResult: 'correct' | 'incorrect' | null;
   activeMentorId: string | null;
   activeSummary: string;

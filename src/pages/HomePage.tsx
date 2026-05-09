@@ -10,6 +10,15 @@ import { useDailyInsight } from '../hooks/useDailyInsight';
 import AiResponse from '../components/AiResponse';
 import './HomePage.scss';
 
+const studyStageLabel = {
+  observe: '观察牌面',
+  symbols: '提取符号',
+  teach: '导师讲解',
+  scenario: '情境练习',
+  quiz: '掌握测试',
+  mastered: '已掌握',
+} as const;
+
 const starPositions = [
   { w: 4, h: 4, top: '10%', left: '10%', delay: 0.5 },
   { w: 4, h: 4, top: '24%', left: '80%', delay: 1.2 },
@@ -159,11 +168,11 @@ export default function HomePage() {
             <div className="study-dock-copy">
               <span className="study-dock-label">学习系统</span>
               <h3 className="study-dock-title">{activeCard ? `继续学 ${activeCard.chineseName}` : '今天从一张牌开始'}</h3>
-              <p className="study-dock-text">
-                {activeCard
-                  ? `当前阶段：${studyJournal.activeStage === 'observe' ? '观察' : studyJournal.activeStage === 'teach' ? '讲解' : studyJournal.activeStage === 'quiz' ? '小测' : '掌握'} · 待复习 ${dueReviewCount} 张`
-                  : `每天按自己的节奏学 ${dailyStudyTarget} 张，学完的牌会自动进入复习节奏。`}
-              </p>
+                <p className="study-dock-text">
+                  {activeCard
+                    ? `当前阶段：${studyStageLabel[studyJournal.activeStage] || '学习中'} · 待复习 ${dueReviewCount} 张`
+                    : `每天按自己的节奏学 ${dailyStudyTarget} 张，学完的牌会自动进入复习节奏。`}
+                </p>
             </div>
             <div className="study-dock-actions">
               <button type="button" className="study-dock-btn primary" onClick={() => navigate(activeCard ? `/learn/${activeCard.id}` : '/library')}>
