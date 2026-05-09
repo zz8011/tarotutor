@@ -10,6 +10,7 @@ import {
   Send,
   Sparkles,
   WandSparkles,
+  X,
 } from 'lucide-react';
 import BottomNav from '../components/BottomNav';
 import AiResponse from '../components/AiResponse';
@@ -230,6 +231,34 @@ function buildMasteryMessage(card: TarotCard, orientation: Orientation, recap: s
   ].join('\n\n');
 }
 
+function buildQuizSubmissionMessage(quizQuestions: ChoiceQuestion[], answers: QuizAnswerMap) {
+  return [
+    '我完成了掌握测试，请导师点评。',
+    ...quizQuestions.map((question) => `${question.label}：${answers[question.id] || '未作答'}`),
+  ].join('\n');
+}
+
+function buildQuizReviewMessage(quizQuestions: ChoiceQuestion[], answers: QuizAnswerMap) {
+  const failedQuestions = quizQuestions.filter((question) => answers[question.id] !== question.correctAnswer);
+
+  if (!failedQuestions.length) {
+    return [
+      '合格，可以进入下一步。',
+      '这组三题说明你已经抓住了核心关键词、正逆位方向和读牌方法。现在不要急着学下一张，最后用你自己的话复述一遍，让这张牌真正变成你的理解。',
+      '复述时请包含两个部分：一个牌面细节，一个解读提醒。',
+    ].join('\n\n');
+  }
+
+  return [
+    '这次还不算合格，我们先把不稳的地方补回来。',
+    ...failedQuestions.map(
+      (question) =>
+        `不合格点：${question.label}\n你的答案：${answers[question.id] || '未作答'}\n需要重学：${question.explanation}`
+    ),
+    '我已经把正确选项露出来。请回到这些题，重新选择。通过后我们再进入复述。真正学会不是一次答对，而是能把偏掉的地方拉回来。',
+  ].join('\n\n');
+}
+
 function getNextReviewDays(reviewCount: number) {
   if (reviewCount <= 0) return 1;
   if (reviewCount === 1) return 3;
@@ -290,6 +319,7 @@ export default function LearnPage() {
   const [quizResult, setQuizResult] = useState<'correct' | 'incorrect' | null>(
     activeSession?.quizResult || activeRecord?.quizResult || null
   );
+  const [isImageOpen, setIsImageOpen] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(
     activeSession?.messages?.length ? activeSession.messages : [buildOpeningMessage(card, mentor.chineseName, initialOrientation)]
@@ -300,6 +330,7 @@ export default function LearnPage() {
 
   const scenario = useMemo(() => buildScenario(card, orientation), [card, orientation]);
   const quizQuestions = useMemo(() => buildChoiceQuiz(card, orientation), [card, orientation]);
+  const cardImagePath = getCardImagePath(card.id, cardDeck);
   const currentMeaning = orientation === 'upright' ? card.uprightMeaning : card.reversedMeaning;
   const dueReviewCount = Object.values(studyJournal.records).filter((record) => {
     if (!record.nextReviewAt) return false;
@@ -307,7 +338,8 @@ export default function LearnPage() {
   }).length;
   const answeredChoiceCount = quizQuestions.filter((question) => quizAnswers[question.id]).length;
   const correctChoiceCount = quizQuestions.filter((question) => quizAnswers[question.id] === question.correctAnswer).length;
-  const choiceQuizPassed = correctChoiceCount === quizQuestions.length;
+  const allChoicesAnswered = answeredChoiceCount === quizQuestions.length;
+  const choiceQuizPassed = quizResult === 'correct' && correctChoiceCount === quizQuestions.length;
   const awaitingRecap = stage === 'quiz' && choiceQuizPassed && !quizAnswers.recap;
   const progressIndex = Math.max(stageOrder.indexOf(stage), 0);
 
@@ -606,41 +638,36 @@ export default function LearnPage() {
   };
 
   const handleQuizChoice = (question: ChoiceQuestion, answer: string) => {
-    if (isStreaming || stage === 'mastered') return;
+    if (isStreaming || stage === 'mastered' || choiceQuizPassed) return;
 
     const nextAnswers = { ...quizAnswers, [question.id]: answer };
-    const isCorrect = answer === question.correctAnswer;
-    const answeredQuestions = quizQuestions.filter((item) => nextAnswers[item.id]);
-    const passedQuestions = quizQuestions.filter((item) => nextAnswers[item.id] === item.correctAnswer);
-    const allChoicesCorrect = passedQuestions.length === quizQuestions.length;
-
-    const userMessage = createMessage('user', `${question.label}：${answer}`, 'application');
-    const feedbackMessage = createMessage(
-      'assistant',
-      isCorrect
-        ? `这题对了。${question.explanation}`
-        : `这题还需要调整。\n\n导师提示：${question.explanation}\n\n你可以直接重新选择这一题。`,
-      'application'
-    );
-    const nextMessages = [...chatMessages, userMessage, feedbackMessage];
-
-    if (allChoicesCorrect && !choiceQuizPassed && !quizAnswers.recap) {
-      nextMessages.push(
-        createMessage(
-          'assistant',
-          '三道选择题都通过了。最后一步，用你自己的话复述这张牌：它在牌面上让你看见什么？在解读里通常提醒什么？',
-          'application'
-        )
-      );
-    }
+    const nextQuizResult = quizResult === 'incorrect' ? 'incorrect' : null;
 
     setQuizAnswers(nextAnswers);
-    setQuizResult(allChoicesCorrect ? 'correct' : answeredQuestions.length === quizQuestions.length ? 'incorrect' : null);
-    commitMessages(nextMessages, {
+    setQuizResult(nextQuizResult);
+    persistSession({
       lessonStage: 'quiz',
       quizAnswers: nextAnswers,
       quizAnswer: answer,
-      quizResult: allChoicesCorrect ? 'correct' : answeredQuestions.length === quizQuestions.length ? 'incorrect' : null,
+      quizResult: nextQuizResult,
+    });
+  };
+
+  const handleQuizSubmit = () => {
+    if (!allChoicesAnswered || isStreaming || stage === 'mastered') return;
+
+    const passed = quizQuestions.every((question) => quizAnswers[question.id] === question.correctAnswer);
+    const userMessage = createMessage('user', buildQuizSubmissionMessage(quizQuestions, quizAnswers), 'application');
+    const reviewMessage = createMessage('assistant', buildQuizReviewMessage(quizQuestions, quizAnswers), 'application');
+    const nextMessages = [...chatMessages, userMessage, reviewMessage];
+    const nextQuizResult = passed ? 'correct' : 'incorrect';
+
+    setQuizResult(nextQuizResult);
+    commitMessages(nextMessages, {
+      lessonStage: 'quiz',
+      quizAnswers,
+      quizAnswer: '',
+      quizResult: nextQuizResult,
     });
   };
 
@@ -787,7 +814,9 @@ export default function LearnPage() {
               animate={{ rotate: orientation === 'reversed' ? 180 : 0 }}
               transition={{ duration: 0.4 }}
             >
-              <img src={getCardImagePath(card.id, cardDeck)} alt={card.chineseName} className="card-image" />
+              <button className="card-zoom-trigger" type="button" onClick={() => setIsImageOpen(true)}>
+                <img src={cardImagePath} alt={card.chineseName} className="card-image" />
+              </button>
             </motion.div>
 
             <div className="card-study-info">
@@ -876,7 +905,15 @@ export default function LearnPage() {
                   <span>
                     选择题 {correctChoiceCount}/{quizQuestions.length}
                   </span>
-                  <span>{choiceQuizPassed ? '等待复述' : answeredChoiceCount === quizQuestions.length ? '需要修正' : '进行中'}</span>
+                  <span>
+                    {quizResult === 'correct'
+                      ? '合格'
+                      : quizResult === 'incorrect'
+                        ? '需重学'
+                        : allChoicesAnswered
+                          ? '待点评'
+                          : '进行中'}
+                  </span>
                 </div>
 
                 {quizQuestions.map((question) => {
@@ -891,20 +928,22 @@ export default function LearnPage() {
                           const isSelected = answer === option;
                           const isCorrect = option === question.correctAnswer;
                           const stateClass =
-                            isSelected && isCorrect
+                            choiceQuizPassed && isSelected && isCorrect
                               ? 'correct'
-                              : isSelected
+                              : quizResult === 'incorrect' && isSelected && !isCorrect
                                 ? 'wrong'
-                                : answer && isCorrect
+                                : quizResult === 'incorrect' && isCorrect
                                   ? 'revealed'
-                                  : '';
+                                  : isSelected
+                                    ? 'selected'
+                                    : '';
 
                           return (
                             <button
                               key={option}
                               className={`quiz-option ${stateClass}`}
                               onClick={() => handleQuizChoice(question, option)}
-                              disabled={isStreaming || stage === 'mastered'}
+                              disabled={isStreaming || stage === 'mastered' || choiceQuizPassed}
                             >
                               {option}
                             </button>
@@ -915,10 +954,23 @@ export default function LearnPage() {
                   );
                 })}
 
+                {allChoicesAnswered && !choiceQuizPassed && (
+                  <button className="quiz-submit-btn" onClick={handleQuizSubmit} disabled={isStreaming}>
+                    {quizResult === 'incorrect' ? '重新提交导师点评' : '提交给导师点评'}
+                  </button>
+                )}
+
+                {quizResult === 'incorrect' && (
+                  <div className="recap-callout retry">
+                    <BookOpen size={15} />
+                    <span>导师已指出不合格点。请重选薄弱题目，再提交点评。</span>
+                  </div>
+                )}
+
                 {choiceQuizPassed && stage !== 'mastered' && (
                   <div className="recap-callout">
                     <BookOpen size={15} />
-                    <span>选择题已通过。现在在输入框里用自己的话完成一句话复述。</span>
+                    <span>导师点评合格。现在在输入框里用自己的话完成一句话复述。</span>
                   </div>
                 )}
 
@@ -970,6 +1022,42 @@ export default function LearnPage() {
           )}
         </section>
       </main>
+
+      <AnimatePresence>
+        {isImageOpen && (
+          <motion.div
+            className="card-lightbox"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${card.chineseName} 大图`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsImageOpen(false)}
+          >
+            <motion.div
+              className="card-lightbox-inner"
+              initial={{ scale: 0.96, y: 8 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.96, y: 8 }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <button className="lightbox-close" type="button" onClick={() => setIsImageOpen(false)} aria-label="关闭大图">
+                <X size={18} />
+              </button>
+              <img
+                src={cardImagePath}
+                alt={`${card.chineseName} ${orientation === 'upright' ? '正位' : '逆位'}`}
+                className={orientation === 'reversed' ? 'reversed' : ''}
+              />
+              <div className="lightbox-caption">
+                <span>{card.chineseName}</span>
+                <span>{orientation === 'upright' ? '正位' : '逆位'}</span>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <BottomNav />
     </div>

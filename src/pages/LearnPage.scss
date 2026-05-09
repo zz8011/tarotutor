@@ -105,6 +105,16 @@
     display: block;
   }
 
+  .card-zoom-trigger {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    cursor: zoom-in;
+    display: block;
+  }
+
   .card-study-info {
     min-width: 0;
   }
@@ -400,6 +410,13 @@
     cursor: pointer;
     transition: all 0.2s var(--ease-out);
 
+    &.selected {
+      border-color: rgba(212, 175, 55, 0.42);
+      color: var(--color-primary);
+      background: rgba(212, 175, 55, 0.08);
+      box-shadow: var(--shadow-gold-soft);
+    }
+
     &.correct {
       background: rgba(16, 185, 129, 0.12);
       border-color: rgba(16, 185, 129, 0.45);
@@ -437,6 +454,29 @@
       border-color: rgba(16, 185, 129, 0.24);
       background: rgba(16, 185, 129, 0.1);
       color: var(--color-emerald);
+    }
+
+    &.retry {
+      border-color: rgba(239, 68, 68, 0.25);
+      background: rgba(239, 68, 68, 0.08);
+      color: #fca5a5;
+    }
+  }
+
+  .quiz-submit-btn {
+    min-height: 42px;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(212, 175, 55, 0.32);
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(16, 185, 129, 0.12));
+    color: var(--color-primary);
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
   }
 
@@ -558,6 +598,75 @@
       background: var(--color-primary);
       color: var(--bg-deep);
       font-weight: 800;
+    }
+  }
+
+  .card-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(5, 4, 9, 0.86);
+    backdrop-filter: blur(18px);
+  }
+
+  .card-lightbox-inner {
+    width: min(88vw, 420px);
+    max-height: 88vh;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .card-lightbox-inner img {
+    width: min(78vw, 360px);
+    max-height: 78vh;
+    object-fit: contain;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.65);
+    background: var(--bg-elevated);
+
+    &.reversed {
+      transform: rotate(180deg);
+    }
+  }
+
+  .lightbox-close {
+    position: absolute;
+    top: -12px;
+    right: 8px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(20, 14, 26, 0.92);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .lightbox-caption {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+
+    span {
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(212, 175, 55, 0.18);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-secondary);
+      font-size: 12px;
+      line-height: 1;
+      padding: 8px 10px;
     }
   }
 }
