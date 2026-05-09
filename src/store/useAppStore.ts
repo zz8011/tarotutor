@@ -1,6 +1,16 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { UserProgress, LearningSession, ChatMessage, DiaryEntry, Achievement, CardSpread } from '../types';
+import type {
+  UserProgress,
+  LearningSession,
+  ChatMessage,
+  DiaryEntry,
+  Achievement,
+  CardSpread,
+  StudyJournal,
+  StudyRecord,
+  StudyStage,
+} from '../types';
 import { appStorage } from '../platform/storage';
 import { setActiveDeck } from '../data/tarotCards';
 
@@ -18,8 +28,14 @@ interface AppState {
 
   currentSession: LearningSession | null;
   startSession: (cardId: number, mentorId: string) => void;
+  updateCurrentSession: (updates: Partial<LearningSession>) => void;
   addMessage: (message: ChatMessage) => void;
   endSession: () => void;
+
+  studyJournal: StudyJournal;
+  setStudyJournal: (updates: Partial<StudyJournal>) => void;
+  upsertStudyRecord: (cardId: number, updates: Partial<StudyRecord>) => void;
+  clearStudyJournalActive: () => void;
 
   dailyCard: { cardId: number; date: string; orientation: 'upright' | 'reversed' } | null;
   drawDailyCard: () => Promise<{ cardId: number; date: string; orientation: 'upright' | 'reversed' }>;
@@ -65,6 +81,49 @@ const defaultProgress: UserProgress = {
   startedAt: new Date().toISOString(),
   lastActiveAt: new Date().toISOString(),
 };
+
+const defaultStudyJournal: StudyJournal = {
+  activeCardId: null,
+  activeStage: 'observe',
+  activeOrientation: 'upright',
+  activeReflection: '',
+  activeFollowUp: '',
+  activeQuizQuestion: '',
+  activeQuizOptions: [],
+  activeQuizAnswer: '',
+  activeQuizResult: null,
+  activeMentorId: null,
+  activeSummary: '',
+  records: {},
+  updatedAt: new Date().toISOString(),
+};
+
+function createDefaultStudyRecord(cardId: number, mentorId: string | null): StudyRecord {
+  return {
+    cardId,
+    mentorId,
+    stage: 'observe',
+    orientation: 'upright',
+    reflection: '',
+    followUp: '',
+    quizQuestion: '',
+    quizOptions: [],
+    quizAnswer: '',
+    quizResult: null,
+    mastered: false,
+    reviewCount: 0,
+    lastStudiedAt: new Date().toISOString(),
+    completedAt: null,
+    nextReviewAt: null,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function addDays(date: Date, days: number) {
+  const copy = new Date(date);
+  copy.setDate(copy.getDate() + days);
+  return copy.toISOString();
+}
 
 export const useAppStore = create<AppState>()(
   persist(
@@ -116,6 +175,15 @@ export const useAppStore = create<AppState>()(
           mentorId,
           messages: [],
           phase: 'perception',
+          lessonStage: 'observe',
+          orientation: 'upright',
+          reflection: '',
+          followUp: '',
+          quizQuestion: '',
+          quizOptions: [],
+          quizAnswer: '',
+          quizResult: null,
+          summary: '',
           userFeeling: null,
           knowledgeUnlocked: false,
           diary: null,
@@ -124,6 +192,10 @@ export const useAppStore = create<AppState>()(
         };
         set({ currentSession: session });
       },
+      updateCurrentSession: (updates) =>
+        set((state) => ({
+          currentSession: state.currentSession ? { ...state.currentSession, ...updates } : null,
+        })),
       addMessage: (message) =>
         set((state) => ({
           currentSession: state.currentSession
@@ -137,6 +209,65 @@ export const useAppStore = create<AppState>()(
             ...state.progress,
             totalSessions: state.progress.totalSessions + 1,
             lastActiveAt: new Date().toISOString(),
+          },
+        })),
+
+      studyJournal: defaultStudyJournal,
+      setStudyJournal: (updates) =>
+        set((state) => ({
+          studyJournal: {
+            ...state.studyJournal,
+            ...updates,
+            updatedAt: new Date().toISOString(),
+          },
+        })),
+      upsertStudyRecord: (cardId, updates) =>
+        set((state) => {
+          const existing = state.studyJournal.records[String(cardId)] || createDefaultStudyRecord(cardId, state.primaryMentor);
+          const nextStage = (updates.stage ?? existing.stage) as StudyStage;
+          const mastered = updates.mastered ?? existing.mastered;
+          const reviewCount = updates.reviewCount ?? existing.reviewCount;
+          const nextReviewAt =
+            updates.nextReviewAt ??
+            (mastered ? addDays(new Date(), reviewCount === 0 ? 1 : reviewCount === 1 ? 3 : reviewCount === 2 ? 7 : 14) : existing.nextReviewAt);
+
+          const record: StudyRecord = {
+            ...existing,
+            ...updates,
+            stage: nextStage,
+            mastered,
+            reviewCount,
+            nextReviewAt,
+            updatedAt: new Date().toISOString(),
+          };
+
+          return {
+            studyJournal: {
+              ...state.studyJournal,
+              records: {
+                ...state.studyJournal.records,
+                [String(cardId)]: record,
+              },
+              updatedAt: new Date().toISOString(),
+            },
+          };
+        }),
+      clearStudyJournalActive: () =>
+        set((state) => ({
+          studyJournal: {
+            ...state.studyJournal,
+            activeCardId: null,
+            activeStage: 'observe',
+            activeOrientation: 'upright',
+            activeReflection: '',
+            activeFollowUp: '',
+            activeQuizQuestion: '',
+            activeQuizOptions: [],
+            activeQuizAnswer: '',
+            activeQuizResult: null,
+            activeMentorId: null,
+            activeSummary: '',
+            updatedAt: new Date().toISOString(),
           },
         })),
 
@@ -182,6 +313,8 @@ export const useAppStore = create<AppState>()(
         progress: state.progress,
         dailyCard: state.dailyCard,
         dailyGuidance: state.dailyGuidance,
+        currentSession: state.currentSession,
+        studyJournal: state.studyJournal,
         personalityType: state.personalityType,
         primaryMentor: state.primaryMentor,
         spreads: state.spreads,

@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowLeft,
@@ -18,11 +18,8 @@ import { getDefaultMentor, getMentorById } from '../data/mentors';
 import { streamCardLearningResponse } from '../services/ai';
 import { useAppStore } from '../store/useAppStore';
 import { useMagicParticles } from '../hooks/useMagicParticles';
-import type { ChatMessage, TarotCard } from '../types';
+import type { ChatMessage, TarotCard, StudyStage } from '../types';
 import './LearnPage.scss';
-
-type LearningStage = 'observe' | 'teach' | 'quiz' | 'mastered';
-type QuizResult = 'correct' | 'incorrect' | null;
 
 interface LearningQuiz {
   question: string;
@@ -45,12 +42,12 @@ function normalizeMeaning(text: string) {
 
 function buildLearningQuiz(card: TarotCard, orientation: 'upright' | 'reversed'): LearningQuiz {
   const coreKeyword = card.keywords.find(Boolean) || card.chineseName;
-  const pool = tarotCards
-    .flatMap((item) => item.keywords.slice(0, 2))
-    .filter(Boolean)
-    .filter((keyword) => keyword !== coreKeyword);
+  const distractors = shuffle(
+    [...new Set(tarotCards.flatMap((item) => item.keywords.slice(0, 2)).filter(Boolean))].filter(
+      (keyword) => keyword !== coreKeyword
+    )
+  ).slice(0, 2);
 
-  const distractors = shuffle([...new Set(pool)]).slice(0, 2);
   const options = shuffle([coreKeyword, ...distractors]);
   const reversedAnchor = normalizeMeaning(card.reversedMeaning) || '结构变化';
 
@@ -58,13 +55,13 @@ function buildLearningQuiz(card: TarotCard, orientation: 'upright' | 'reversed')
     question:
       orientation === 'upright'
         ? '这张牌最该先抓住的核心气质是什么？'
-        : '即使是逆位，先回到它的核心提醒。最贴近的一项是什么？',
+        : '即使是逆位，也先回到它最核心的提醒。最贴近的一项是什么？',
     options,
     correctAnswer: coreKeyword,
     hint:
       orientation === 'upright'
-        ? `正位先记住「${coreKeyword}」，再把它放进情境里理解。`
-        : `逆位先看「${reversedAnchor}」这类偏移，再回到核心关键词。`,
+        ? `正位先记住“${coreKeyword}”，再把它放进情境里理解。`
+        : `逆位先看“${reversedAnchor}”这类偏移，再回到核心关键词。`,
   };
 }
 
@@ -82,42 +79,31 @@ function buildMasteryMessage(card: TarotCard, orientation: 'upright' | 'reversed
   ].join('\n\n');
 }
 
+function getNextReviewDays(reviewCount: number) {
+  if (reviewCount <= 0) return 1;
+  if (reviewCount === 1) return 3;
+  if (reviewCount === 2) return 7;
+  if (reviewCount === 3) return 14;
+  return 30;
+}
+
 export default function LearnPage() {
   const { cardId } = useParams<{ cardId?: string }>();
   const navigate = useNavigate();
-  const primaryMentor = useAppStore((state) => state.primaryMentor);
+
+  const currentSession = useAppStore((state) => state.currentSession);
+  const startSession = useAppStore((state) => state.startSession);
+  const updateCurrentSession = useAppStore((state) => state.updateCurrentSession);
   const completeCard = useAppStore((state) => state.completeCard);
+  const setStudyJournal = useAppStore((state) => state.setStudyJournal);
+  const upsertStudyRecord = useAppStore((state) => state.upsertStudyRecord);
+  const studyJournal = useAppStore((state) => state.studyJournal);
   const cardDeck = useAppStore((state) => state.cardDeck);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-  const nextMessageId = useRef(2);
+  const primaryMentorId = useAppStore((state) => state.primaryMentor);
 
   useMagicParticles({ color: 'var(--accent-emerald)', count: 6 });
 
   const card = cardId ? getCardById(Number(cardId)) : tarotCards[0];
-  const mentor = (primaryMentor && getMentorById(primaryMentor)) || getDefaultMentor();
-
-  const [orientation, setOrientation] = useState<'upright' | 'reversed'>('upright');
-  const [reflection, setReflection] = useState('');
-  const [followUp, setFollowUp] = useState('');
-  const [stage, setStage] = useState<LearningStage>('observe');
-  const [quizResult, setQuizResult] = useState<QuizResult>(null);
-  const [selectedAnswer, setSelectedAnswer] = useState('');
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    {
-      id: '1',
-      role: 'assistant',
-      content: '先看牌，不急着找标准答案。你先说出第一眼看到的画面、情绪，或者身体里的直觉反应。',
-      timestamp: new Date().toISOString(),
-      phase: 'perception',
-    },
-  ]);
-
-  const quiz = useMemo(() => (card ? buildLearningQuiz(card, orientation) : null), [card, orientation]);
-  const currentMeaning = orientation === 'upright' ? card?.uprightMeaning ?? '' : card?.reversedMeaning ?? '';
-  const learnedLabel =
-    stage === 'mastered' ? '已掌握' : stage === 'quiz' ? '小测中' : stage === 'teach' ? '导师讲解' : '观察牌面';
-
   if (!card) {
     return (
       <div className="learn-page">
@@ -129,28 +115,172 @@ export default function LearnPage() {
     );
   }
 
+  const mentor = (primaryMentorId && getMentorById(primaryMentorId)) || getDefaultMentor();
+  const activeSession = currentSession?.cardId === card.id ? currentSession : null;
+  const activeRecord = studyJournal.records[String(card.id)];
+
+  const initialStage: StudyStage = activeSession?.lessonStage || activeRecord?.stage || 'observe';
+  const initialOrientation: 'upright' | 'reversed' =
+    activeSession?.orientation || activeRecord?.orientation || studyJournal.activeOrientation || 'upright';
+
+  const [orientation, setOrientation] = useState<'upright' | 'reversed'>(initialOrientation);
+  const [reflection, setReflection] = useState(activeSession?.reflection || activeRecord?.reflection || '');
+  const [followUp, setFollowUp] = useState(activeSession?.followUp || activeRecord?.followUp || '');
+  const [stage, setStage] = useState<StudyStage>(initialStage);
+  const [quizResult, setQuizResult] = useState<'correct' | 'incorrect' | null>(
+    activeSession?.quizResult || activeRecord?.quizResult || null
+  );
+  const [selectedAnswer, setSelectedAnswer] = useState(activeSession?.quizAnswer || activeRecord?.quizAnswer || '');
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(
+    activeSession?.messages?.length
+      ? activeSession.messages
+      : [
+          {
+            id: '1',
+            role: 'assistant',
+            content: '先看牌，不急着找标准答案。你先说出第一眼看到的画面、情绪，或者身体里的直觉反应。',
+            timestamp: new Date().toISOString(),
+            phase: 'perception',
+          },
+        ]
+  );
+
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const nextMessageId = useRef(2);
+
+  const quiz = useMemo(() => buildLearningQuiz(card, orientation), [card, orientation]);
+  const currentMeaning = orientation === 'upright' ? card.uprightMeaning : card.reversedMeaning;
+  const learnedLabel =
+    stage === 'mastered' ? '已掌握' : stage === 'quiz' ? '小测中' : stage === 'teach' ? '导师讲解' : '观察牌面';
+
+  useEffect(() => {
+    if (!currentSession || currentSession.cardId !== card.id) {
+      startSession(card.id, mentor.id);
+      setStudyJournal({
+        activeCardId: card.id,
+        activeStage: stage,
+        activeOrientation: orientation,
+        activeReflection: reflection,
+        activeFollowUp: followUp,
+        activeQuizQuestion: quiz.question,
+        activeQuizOptions: quiz.options,
+        activeQuizAnswer: selectedAnswer,
+        activeQuizResult: quizResult,
+        activeMentorId: mentor.id,
+        activeSummary: currentMeaning,
+      });
+      upsertStudyRecord(card.id, {
+        stage,
+        orientation,
+        mentorId: mentor.id,
+        reflection,
+        followUp,
+        quizQuestion: quiz.question,
+        quizOptions: quiz.options,
+        quizAnswer: selectedAnswer,
+        quizResult,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [card.id, mentor.id]);
+
+  const persistSession = (patch: {
+    lessonStage?: StudyStage;
+    orientation?: 'upright' | 'reversed';
+    reflection?: string;
+    followUp?: string;
+    quizAnswer?: string;
+    quizResult?: 'correct' | 'incorrect' | null;
+    quizQuestion?: string;
+    quizOptions?: string[];
+    summary?: string;
+    messages?: ChatMessage[];
+  }) => {
+    updateCurrentSession({
+      cardId: card.id,
+      mentorId: mentor.id,
+      lessonStage: patch.lessonStage ?? stage,
+      orientation: patch.orientation ?? orientation,
+      reflection: patch.reflection ?? reflection,
+      followUp: patch.followUp ?? followUp,
+      quizQuestion: patch.quizQuestion ?? quiz.question,
+      quizOptions: patch.quizOptions ?? quiz.options,
+      quizAnswer: patch.quizAnswer ?? selectedAnswer,
+      quizResult: patch.quizResult ?? quizResult,
+      summary: patch.summary ?? currentMeaning,
+      messages: patch.messages ?? chatMessages,
+      phase: patch.lessonStage === 'mastered' ? 'mastery' : patch.lessonStage === 'quiz' ? 'application' : 'understanding',
+        userFeeling: (patch.reflection ?? reflection) || null,
+        knowledgeUnlocked: patch.lessonStage === 'mastered' || activeSession?.knowledgeUnlocked || false,
+      diary: null,
+      endedAt: patch.lessonStage === 'mastered' ? new Date().toISOString() : null,
+    });
+
+    setStudyJournal({
+      activeCardId: card.id,
+      activeStage: patch.lessonStage ?? stage,
+      activeOrientation: patch.orientation ?? orientation,
+      activeReflection: patch.reflection ?? reflection,
+      activeFollowUp: patch.followUp ?? followUp,
+      activeQuizQuestion: patch.quizQuestion ?? quiz.question,
+      activeQuizOptions: patch.quizOptions ?? quiz.options,
+      activeQuizAnswer: patch.quizAnswer ?? selectedAnswer,
+      activeQuizResult: patch.quizResult ?? quizResult,
+      activeMentorId: mentor.id,
+      activeSummary: patch.summary ?? currentMeaning,
+    });
+
+    upsertStudyRecord(card.id, {
+      stage: patch.lessonStage ?? stage,
+      orientation: patch.orientation ?? orientation,
+      mentorId: mentor.id,
+      reflection: patch.reflection ?? reflection,
+      followUp: patch.followUp ?? followUp,
+      quizQuestion: patch.quizQuestion ?? quiz.question,
+      quizOptions: patch.quizOptions ?? quiz.options,
+      quizAnswer: patch.quizAnswer ?? selectedAnswer,
+      quizResult: patch.quizResult ?? quizResult,
+      mastered: (patch.lessonStage ?? stage) === 'mastered',
+      reviewCount:
+        (activeRecord?.reviewCount ?? 0) + ((patch.lessonStage ?? stage) === 'mastered' ? 1 : 0),
+      lastStudiedAt: new Date().toISOString(),
+      completedAt: (patch.lessonStage ?? stage) === 'mastered' ? new Date().toISOString() : activeRecord?.completedAt ?? null,
+      nextReviewAt:
+        (patch.lessonStage ?? stage) === 'mastered'
+          ? new Date(Date.now() + getNextReviewDays(activeRecord?.reviewCount ?? 0) * 24 * 60 * 60 * 1000).toISOString()
+          : activeRecord?.nextReviewAt ?? null,
+    });
+  };
+
+  const appendAssistantMessage = (content: string) => {
+    const assistantId = `msg-${nextMessageId.current++}`;
+    const message: ChatMessage = {
+      id: assistantId,
+      role: 'assistant',
+      content,
+      timestamp: new Date().toISOString(),
+      phase: stage === 'quiz' ? 'application' : 'understanding',
+    };
+
+    setChatMessages((prev) => {
+      const next = [...prev, message];
+      persistSession({ messages: next });
+      return next;
+    });
+
+    return assistantId;
+  };
+
   const toggleOrientation = () => {
-    setOrientation((prev) => (prev === 'upright' ? 'reversed' : 'upright'));
+    const nextOrientation = orientation === 'upright' ? 'reversed' : 'upright';
+    setOrientation(nextOrientation);
     setQuizResult(null);
     setSelectedAnswer('');
     if (stage === 'quiz') {
       setStage('observe');
     }
-  };
-
-  const appendAssistantMessage = (content: string) => {
-    const assistantId = `msg-${nextMessageId.current++}`;
-    setChatMessages((prev) => [
-      ...prev,
-      {
-        id: assistantId,
-        role: 'assistant',
-        content,
-        timestamp: new Date().toISOString(),
-        phase: stage === 'quiz' ? 'application' : 'understanding',
-      },
-    ]);
-    return assistantId;
+    persistSession({ orientation: nextOrientation, quizResult: null, quizAnswer: '' });
   };
 
   const handleStartLearning = async () => {
@@ -169,18 +299,17 @@ export default function LearnPage() {
     setReflection('');
     setStage('teach');
     setIsStreaming(true);
+    persistSession({
+      lessonStage: 'teach',
+      reflection: userMsg.content,
+      messages: updatedMessages,
+    });
 
     const assistantId = appendAssistantMessage('导师正在整理你的观察……');
 
     try {
       let fullContent = '';
-      const stream = streamCardLearningResponse(
-        card,
-        orientation,
-        userMsg.content,
-        updatedMessages.slice(-6),
-        primaryMentor || undefined
-      );
+      const stream = streamCardLearningResponse(card, orientation, userMsg.content, updatedMessages.slice(-6), mentor.id);
 
       for await (const chunk of stream) {
         fullContent += chunk;
@@ -189,8 +318,35 @@ export default function LearnPage() {
         );
       }
 
+      const teachMessages = [
+        ...updatedMessages,
+        {
+          id: assistantId,
+          role: 'assistant' as const,
+          content: fullContent,
+          timestamp: new Date().toISOString(),
+          phase: 'understanding' as const,
+        },
+      ];
+
       setStage('quiz');
-      appendAssistantMessage('很好，我们先停一下。现在做一个小测，确认你有没有抓住这张牌的核心。');
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: `msg-${nextMessageId.current++}`,
+          role: 'assistant',
+          content: '很好，我们先停一下。现在做一个小测，确认你有没有抓住这张牌的核心。',
+          timestamp: new Date().toISOString(),
+          phase: 'application',
+        },
+      ]);
+      persistSession({
+        lessonStage: 'quiz',
+        quizQuestion: quiz.question,
+        quizOptions: quiz.options,
+        messages: teachMessages,
+        summary: fullContent,
+      });
     } catch (error) {
       console.error('AI stream failed:', error);
       setChatMessages((prev) =>
@@ -199,6 +355,7 @@ export default function LearnPage() {
         )
       );
       setStage('observe');
+      persistSession({ lessonStage: 'observe' });
     } finally {
       setIsStreaming(false);
       setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 120);
@@ -219,17 +376,33 @@ export default function LearnPage() {
       timestamp: new Date().toISOString(),
       phase: 'application',
     };
-    setChatMessages((prev) => [...prev, userMsg]);
+    const nextMessages = [...chatMessages, userMsg];
+    setChatMessages(nextMessages);
 
     if (correct) {
       completeCard(card.id);
       setStage('mastered');
-      appendAssistantMessage(buildMasteryMessage(card, orientation, quiz));
+      const masteryText = buildMasteryMessage(card, orientation, quiz);
+      appendAssistantMessage(masteryText);
+      persistSession({
+        lessonStage: 'mastered',
+        quizAnswer: answer,
+        quizResult: 'correct',
+        summary: masteryText,
+        messages: [...nextMessages, ...chatMessages.slice(-1)],
+      });
       setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 120);
       return;
     }
 
-    appendAssistantMessage(`还差一点，先别急着改答案。${quiz.hint}`);
+    const hintText = `还差一点，先别急着改答案。\n\n${quiz.hint}`;
+    appendAssistantMessage(hintText);
+    persistSession({
+      lessonStage: 'quiz',
+      quizAnswer: answer,
+      quizResult: 'incorrect',
+      messages: nextMessages,
+    });
     setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 120);
   };
 
@@ -248,6 +421,7 @@ export default function LearnPage() {
     setChatMessages(updatedMessages);
     setFollowUp('');
     setIsStreaming(true);
+    persistSession({ followUp: '', messages: updatedMessages });
 
     const assistantId = appendAssistantMessage('导师在想一下你的这个追问……');
 
@@ -258,7 +432,7 @@ export default function LearnPage() {
         orientation,
         userMsg.content,
         updatedMessages.slice(-6),
-        primaryMentor || undefined
+        mentor.id
       );
 
       for await (const chunk of stream) {
@@ -267,6 +441,11 @@ export default function LearnPage() {
           prev.map((message) => (message.id === assistantId ? { ...message, content: fullContent } : message))
         );
       }
+
+      persistSession({
+        summary: fullContent,
+        messages: [...updatedMessages, { id: assistantId, role: 'assistant', content: fullContent, timestamp: new Date().toISOString(), phase: 'understanding' }],
+      });
     } catch (error) {
       console.error('Follow-up stream failed:', error);
       setChatMessages((prev) =>
@@ -279,6 +458,11 @@ export default function LearnPage() {
       setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 120);
     }
   };
+
+  const dueReviewCount = Object.values(studyJournal.records).filter((record) => {
+    if (!record.nextReviewAt) return false;
+    return new Date(record.nextReviewAt).getTime() <= Date.now();
+  }).length;
 
   return (
     <div className="learn-page">
@@ -304,7 +488,8 @@ export default function LearnPage() {
 
             <div className="hero-state">
               <span className={`state-chip stage-${stage}`}>{learnedLabel}</span>
-              <span className="state-chip">导师陪学</span>
+              <span className="state-chip">本地已保存</span>
+              <span className="state-chip">待复习 {dueReviewCount}</span>
             </div>
           </div>
 
@@ -379,7 +564,10 @@ export default function LearnPage() {
                 className="reflection-input"
                 placeholder="例如：这张牌让我觉得……"
                 value={reflection}
-                onChange={(e) => setReflection(e.target.value)}
+                onChange={(e) => {
+                  setReflection(e.target.value);
+                  persistSession({ reflection: e.target.value });
+                }}
                 rows={4}
               />
               <button className="reflection-btn" onClick={handleStartLearning} disabled={isStreaming || !reflection.trim()}>
@@ -501,7 +689,10 @@ export default function LearnPage() {
                 type="text"
                 placeholder="继续问导师：这张牌在某个场景里怎么读？"
                 value={followUp}
-                onChange={(e) => setFollowUp(e.target.value)}
+                onChange={(e) => {
+                  setFollowUp(e.target.value);
+                  persistSession({ followUp: e.target.value });
+                }}
                 onKeyDown={(e) => e.key === 'Enter' && handleFollowUp()}
                 className="chat-input"
                 disabled={isStreaming}

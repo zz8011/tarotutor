@@ -1,9 +1,9 @@
-﻿import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Sparkles, BookOpen, Star, Compass, User, MoonStar, WandSparkles } from 'lucide-react';
 import BottomNav from '../components/BottomNav';
 import { useAppStore } from '../store/useAppStore';
-import { tarotCards, getCardImagePath } from '../data/tarotCards';
+import { tarotCards, getCardById, getCardImagePath } from '../data/tarotCards';
 import { useMagicParticles } from '../hooks/useMagicParticles';
 import { useFireflies } from '../hooks/useFireflies';
 import { useDailyInsight } from '../hooks/useDailyInsight';
@@ -25,10 +25,10 @@ const starPositions = [
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const { progress, primaryMentor, cardDeck, dailyStudyTarget, setDailyStudyTarget } = useAppStore();
-  const { dailyCardData, currentDailyGuidance, handleDrawDaily, isFlipped, isLoadingGuidance, showGuidance } = useDailyInsight();
+  const { progress, primaryMentor, cardDeck, dailyStudyTarget, setDailyStudyTarget, studyJournal } = useAppStore();
+  const { dailyCardData, currentDailyGuidance, handleDrawDaily, isFlipped, isLoadingGuidance, showGuidance } =
+    useDailyInsight();
 
-  // Initialize magic particles and fireflies
   useMagicParticles({ color: 'var(--accent-gold)', count: 8 });
   const { fireflies } = useFireflies({ count: 12 });
 
@@ -38,6 +38,12 @@ export default function HomePage() {
   const learnProgress = Math.round((learnedCount / totalCards) * 100);
   const isSpreadUnlocked = learnedCount >= totalCards;
   const studyTargets = [3, 5, 7] as const;
+
+  const activeCard = studyJournal.activeCardId != null ? getCardById(studyJournal.activeCardId) : null;
+  const dueReviewCount = Object.values(studyJournal.records).filter((record) => {
+    if (!record.nextReviewAt) return false;
+    return new Date(record.nextReviewAt).getTime() <= Date.now();
+  }).length;
 
   const quickActions = [
     { icon: Compass, label: '性格测试', path: '/quiz', desc: '发现你的灵魂导师' },
@@ -54,48 +60,41 @@ export default function HomePage() {
 
   return (
     <div className="home-page">
-      {/* Animated Background */}
       <div className="stars-bg">
         {starPositions.map((s, i) => (
           <div
             key={i}
             className="star"
-            style={{
-              width: s.w, height: s.h,
-              top: s.top, left: s.left,
-              animationDelay: `${s.delay}s`,
-            }}
+            style={{ width: s.w, height: s.h, top: s.top, left: s.left, animationDelay: `${s.delay}s` }}
           />
         ))}
       </div>
 
-      {/* Fireflies Background */}
       <div className="fireflies-bg">
         {fireflies.map((f) => (
           <div
             key={f.id}
             className="firefly"
-            style={{
-              left: f.left,
-              top: f.top,
-              animationDelay: f.delay,
-              animationDuration: f.duration,
-              '--move-x': f.moveX,
-              '--move-y': f.moveY,
-            } as React.CSSProperties}
+            style={
+              {
+                left: f.left,
+                top: f.top,
+                animationDelay: f.delay,
+                animationDuration: f.duration,
+                '--move-x': f.moveX,
+                '--move-y': f.moveY,
+              } as React.CSSProperties
+            }
           />
         ))}
       </div>
 
-      {/* Header */}
       <header className="home-header">
         <h1 className="title-gradient">神秘塔罗学院</h1>
         <p className="title-sub">MYSTIC TAROT ACADEMY</p>
       </header>
 
-      {/* Main Content */}
       <main className="home-main">
-        {/* Daily Card Section */}
         <section className="daily-section">
           <h2 className="section-label">
             <Sparkles size={14} />
@@ -105,7 +104,6 @@ export default function HomePage() {
 
           <div className={`card-container ${isFlipped ? 'card-flipped' : ''}`} onClick={handleDrawDaily}>
             <div className="card-inner">
-              {/* Back */}
               <div className="card-front daily-card">
                 <div className="card-back-design">
                   <div className="card-inner-border">
@@ -114,7 +112,6 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
-              {/* Front */}
               <div className="card-back daily-card">
                 {dailyCardData ? (
                   <div className="card-face">
@@ -149,30 +146,42 @@ export default function HomePage() {
           </div>
 
           {showGuidance && currentDailyGuidance && (
-            <motion.div
-              className="daily-guidance glass-panel"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-            >
+            <motion.div className="daily-guidance glass-panel" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <AiResponse text={currentDailyGuidance} />
             </motion.div>
           )}
 
-          {isLoadingGuidance && (
-            <p className="loading-text">正在解读中...</p>
-          )}
+          {isLoadingGuidance && <p className="loading-text">正在解读中...</p>}
         </section>
 
-        {/* Learning Progress */}
+        <section className="study-dock">
+          <div className="study-dock-card glass-dark">
+            <div className="study-dock-copy">
+              <span className="study-dock-label">学习系统</span>
+              <h3 className="study-dock-title">{activeCard ? `继续学 ${activeCard.chineseName}` : '今天从一张牌开始'}</h3>
+              <p className="study-dock-text">
+                {activeCard
+                  ? `当前阶段：${studyJournal.activeStage === 'observe' ? '观察' : studyJournal.activeStage === 'teach' ? '讲解' : studyJournal.activeStage === 'quiz' ? '小测' : '掌握'} · 待复习 ${dueReviewCount} 张`
+                  : `每天按自己的节奏学 ${dailyStudyTarget} 张，学完的牌会自动进入复习节奏。`}
+              </p>
+            </div>
+            <div className="study-dock-actions">
+              <button type="button" className="study-dock-btn primary" onClick={() => navigate(activeCard ? `/learn/${activeCard.id}` : '/library')}>
+                {activeCard ? '继续学习' : '去牌库开始'}
+              </button>
+              <button type="button" className="study-dock-btn secondary" onClick={() => navigate('/library')}>
+                打开牌库
+              </button>
+            </div>
+          </div>
+        </section>
+
         {!hasCompletedQuiz && (
-          <motion.section
-            className="cta-section"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
+          <motion.section className="cta-section" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
             <div className="cta-card glass-dark" onClick={() => navigate('/quiz')}>
-              <div className="cta-icon"><WandSparkles size={28} /></div>
+              <div className="cta-icon">
+                <WandSparkles size={28} />
+              </div>
               <div className="cta-content">
                 <h3>开始灵魂之旅</h3>
                 <p>完成性格测试，找到你的专属塔罗导师</p>
@@ -186,7 +195,9 @@ export default function HomePage() {
           <section className="progress-section">
             <div className="progress-header">
               <span className="progress-label">学习进度</span>
-              <span className="progress-value">{learnedCount}/{totalCards}</span>
+              <span className="progress-value">
+                {learnedCount}/{totalCards}
+              </span>
             </div>
             <div className="progress-track">
               <motion.div
@@ -199,12 +210,7 @@ export default function HomePage() {
           </section>
         )}
 
-        <motion.section
-          className="plan-section"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.26 }}
-        >
+        <motion.section className="plan-section" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.26 }}>
           <div className="plan-card glass-dark">
             <div className="plan-copy">
               <span className="plan-label">学习计划</span>
@@ -225,7 +231,6 @@ export default function HomePage() {
           </div>
         </motion.section>
 
-        {/* Quick Actions Grid */}
         <section className="actions-grid">
           {quickActions.map((action, i) => (
             <motion.button
@@ -255,4 +260,3 @@ export default function HomePage() {
     </div>
   );
 }
-

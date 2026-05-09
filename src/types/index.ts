@@ -9,6 +9,7 @@ export type Suit = 'wands' | 'cups' | 'swords' | 'pentacles';
 export type Element = 'fire' | 'water' | 'air' | 'earth';
 export type PersonalityDimension = 'intuitive_logical' | 'supportive_independent' | 'free_systematic' | 'lively_contemplative';
 export type LearningPhase = 'perception' | 'understanding' | 'application' | 'mastery';
+export type StudyStage = 'observe' | 'teach' | 'quiz' | 'mastered';
 export type MessageRole = 'user' | 'mentor' | 'system' | 'assistant';
 
 // ---- Core Domain Types ------------------------------------
@@ -98,11 +99,55 @@ export interface LearningSession {
   mentorId: string;
   messages: ChatMessage[];
   phase: LearningPhase;
+  lessonStage?: StudyStage;
+  orientation?: 'upright' | 'reversed';
+  reflection?: string;
+  followUp?: string;
+  quizQuestion?: string;
+  quizOptions?: string[];
+  quizAnswer?: string;
+  quizResult?: 'correct' | 'incorrect' | null;
+  summary?: string;
   userFeeling: string | null;
   knowledgeUnlocked: boolean;
   diary: string | null;
   startedAt: string;
   endedAt: string | null;
+}
+
+export interface StudyRecord {
+  cardId: number;
+  mentorId: string | null;
+  stage: StudyStage;
+  orientation: 'upright' | 'reversed';
+  reflection: string;
+  followUp: string;
+  quizQuestion: string;
+  quizOptions: string[];
+  quizAnswer: string;
+  quizResult: 'correct' | 'incorrect' | null;
+  mastered: boolean;
+  reviewCount: number;
+  lastStudiedAt: string;
+  completedAt: string | null;
+  nextReviewAt: string | null;
+  updatedAt: string;
+}
+
+export interface StudyJournal {
+  activeCardId: number | null;
+  activeStage: StudyStage;
+  activeOrientation: 'upright' | 'reversed';
+  activeReflection: string;
+  activeFollowUp: string;
+  activeQuizQuestion: string;
+  activeQuizOptions: string[];
+  activeQuizAnswer: string;
+  activeQuizResult: 'correct' | 'incorrect' | null;
+  activeMentorId: string | null;
+  activeSummary: string;
+  records: Record<string, StudyRecord>;
+  updatedAt: string;
 }
 
 export interface DiaryEntry {

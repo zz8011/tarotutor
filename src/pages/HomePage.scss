@@ -351,6 +351,71 @@
     }
   }
 
+  .study-dock {
+    margin-bottom: 32px;
+
+    .study-dock-card {
+      padding: 18px;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .study-dock-copy {
+      .study-dock-label {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        color: var(--color-emerald);
+        margin-bottom: 6px;
+      }
+
+      .study-dock-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 6px;
+      }
+
+      .study-dock-text {
+        font-size: 13px;
+        line-height: 1.65;
+        color: var(--text-secondary);
+      }
+    }
+
+    .study-dock-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .study-dock-btn {
+      min-height: 40px;
+      border-radius: 12px;
+      border: 1px solid var(--border-default);
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s var(--ease-out);
+
+      &.primary {
+        background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+        color: var(--bg-deep);
+        border-color: var(--color-primary);
+      }
+
+      &.secondary {
+        background: rgba(255, 255, 255, 0.04);
+      }
+    }
+  }
+
   .plan-section {
     margin-bottom: 32px;
 
