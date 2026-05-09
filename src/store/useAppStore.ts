@@ -7,6 +7,8 @@ import { setActiveDeck } from '../data/tarotCards';
 interface AppState {
   userName: string;
   setUserName: (name: string) => void;
+  dailyStudyTarget: 3 | 5 | 7;
+  setDailyStudyTarget: (target: 3 | 5 | 7) => void;
 
   progress: UserProgress;
   updateProgress: (updates: Partial<UserProgress>) => void;
@@ -19,8 +21,20 @@ interface AppState {
   addMessage: (message: ChatMessage) => void;
   endSession: () => void;
 
-  dailyCard: { cardId: number; date: string; orientation: string } | null;
+  dailyCard: { cardId: number; date: string; orientation: 'upright' | 'reversed' } | null;
   drawDailyCard: () => Promise<{ cardId: number; date: string; orientation: 'upright' | 'reversed' }>;
+  dailyGuidance: {
+    cardId: number;
+    date: string;
+    orientation: 'upright' | 'reversed';
+    content: string;
+  } | null;
+  setDailyGuidance: (guidance: {
+    cardId: number;
+    date: string;
+    orientation: 'upright' | 'reversed';
+    content: string;
+  } | null) => void;
 
   personalityType: string | null;
   setPersonalityType: (type: string) => void;
@@ -57,6 +71,8 @@ export const useAppStore = create<AppState>()(
     (set) => ({
       userName: '',
       setUserName: (name) => set({ userName: name }),
+      dailyStudyTarget: 3,
+      setDailyStudyTarget: (target) => set({ dailyStudyTarget: target }),
 
       progress: defaultProgress,
       updateProgress: (updates) =>
@@ -125,6 +141,7 @@ export const useAppStore = create<AppState>()(
         })),
 
       dailyCard: null,
+      dailyGuidance: null,
       drawDailyCard: async () => {
         const { getRandomCard } = await import('../data/tarotCards');
         const card = getRandomCard();
@@ -133,9 +150,11 @@ export const useAppStore = create<AppState>()(
         const dailyCard = { cardId: card.id, date: today, orientation };
         set({
           dailyCard,
+          dailyGuidance: null,
         });
         return dailyCard;
       },
+      setDailyGuidance: (guidance) => set({ dailyGuidance: guidance }),
 
       personalityType: null,
       setPersonalityType: (type) => set({ personalityType: type }),
@@ -159,8 +178,10 @@ export const useAppStore = create<AppState>()(
       storage: appStorage,
       partialize: (state) => ({
         userName: state.userName,
+        dailyStudyTarget: state.dailyStudyTarget,
         progress: state.progress,
         dailyCard: state.dailyCard,
+        dailyGuidance: state.dailyGuidance,
         personalityType: state.personalityType,
         primaryMentor: state.primaryMentor,
         spreads: state.spreads,

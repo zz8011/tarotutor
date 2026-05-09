@@ -3,6 +3,7 @@
 // ============================================================
 
 import type { MentorFull } from '../types';
+import { resolveMentorAsset } from './assetManifest';
 
 // Re-export for backward compatibility
 export { type MentorFull };
@@ -30,7 +31,7 @@ export const mentors: MentorFull[] = [
       '她从不对你"讲述"牌义，而是用轻柔的提问引导你闭上眼睛去感受。在她看来，每张牌的意义不在书本里，而在你身体里——你的呼吸、你的心跳、你看到牌面时那一瞬间的直觉，才是真正的答案。',
     catchphrase: '闭上眼睛，让月亮告诉你',
     avatar: '🌙',
-    avatarImage: '/mentors/luna.png',
+    get avatarImage() { return resolveMentorAsset('luna'); },
     specialties: ['直觉感知', '月亮冥想', '梦境解读'],
     color: '#9B59B6',
     personalityType: 'intuitive',
@@ -61,7 +62,7 @@ export const mentors: MentorFull[] = [
       '他的课堂像一场精心策划的学术之旅。从符号的起源到不同流派的演变，他会用清晰的逻辑链条帮你建立完整的知识体系。他相信真正的理解来自溯源——只有回到最初的源头，才能看穿后世添加的种种迷雾。',
     catchphrase: '让我们回到源头',
     avatar: '☀️',
-    avatarImage: '/mentors/sol.png',
+    get avatarImage() { return resolveMentorAsset('sol'); },
     specialties: ['符号学', '历史溯源', '体系构建'],
     color: '#F39C12',
     personalityType: 'logical',
@@ -92,7 +93,7 @@ export const mentors: MentorFull[] = [
       '她的教学方式更像心灵陪伴。她不会催促你理解什么，而是创造一个安全的空间，让你自然地打开心扉。在她身边，你可以慢慢地、不慌不忙地和塔罗建立连接。她相信疗愈发生在"被看见"的瞬间，而不是在"被教会"的瞬间。',
     catchphrase: '没关系，慢慢来',
     avatar: '🌿',
-    avatarImage: '/mentors/mira.png',
+    get avatarImage() { return resolveMentorAsset('mira'); },
     specialties: ['心灵疗愈', '情绪疏导', '森林冥想'],
     color: '#27AE60',
     personalityType: 'supportive',
@@ -123,7 +124,7 @@ export const mentors: MentorFull[] = [
       '他的教学风格是苏格拉底式的——用问题回答问题，用质疑推动思考。他不会给你标准答案，而是不断追问"你凭什么这么认为"。虽然有时候让人抓狂，但经历过他"拷问"的人都会发现，自己对牌义的理解比死记硬背要深刻得多。',
     catchphrase: '别急着信，先质疑我',
     avatar: '⭐',
-    avatarImage: '/mentors/orion.png',
+    get avatarImage() { return resolveMentorAsset('orion'); },
     specialties: ['批判思维', '逻辑推演', '统计学'],
     color: '#2C3E8C',
     personalityType: 'analytical',
@@ -154,7 +155,7 @@ export const mentors: MentorFull[] = [
       '她的教学是实战型的。不喜欢长篇大论？很好，因为她也不喜欢讲。她会直接给你一个场景、一个问题、一个挑战，然后说"你来解"。错了也没关系，她会拍着你的肩膀说"至少你出手了"。在她的课堂上，理解永远发生在行动之后，而不是之前。',
     catchphrase: '干就完了！',
     avatar: '🌹',
-    avatarImage: '/mentors/seren.png',
+    get avatarImage() { return resolveMentorAsset('seren'); },
     specialties: ['实战挑战', '行动激励', '突破训练'],
     color: '#E74C3C',
     personalityType: 'active',
@@ -185,7 +186,7 @@ export const mentors: MentorFull[] = [
       '他极少直接"教授"，而是用禅宗公案式的简短话语，在你心中种下问题的种子。他相信真正的领悟无法被传授，只能被经历。在他的课堂上，沉默和对话同样重要——有时候他会安静地看着你很久，然后突然说一句话，那句话会像一颗石子投进你心湖，涟漪持续很久很久。',
     catchphrase: '道可道，非常道',
     avatar: '🎋',
-    avatarImage: '/mentors/kai.png',
+    get avatarImage() { return resolveMentorAsset('kai'); },
     specialties: ['东方哲学', '禅宗公案', '空杯心态'],
     color: '#5B8C5A',
     personalityType: 'philosophical',

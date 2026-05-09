@@ -16,6 +16,10 @@ export default class ErrorBoundary extends Component<Props, State> {
     this.state = { hasError: false, error: null };
   }
 
+  private getFallbackPath() {
+    return window.location.pathname.startsWith('/taro') ? '/taro/' : '/';
+  }
+
   static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
@@ -68,7 +72,7 @@ export default class ErrorBoundary extends Component<Props, State> {
           <button
             onClick={() => {
               this.handleReset();
-              window.location.href = '/';
+              window.location.href = this.getFallbackPath();
             }}
             style={{
               padding: '0.75rem 2rem',

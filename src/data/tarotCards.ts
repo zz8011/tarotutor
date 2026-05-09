@@ -1,4 +1,5 @@
-﻿import { TarotCard } from '../types';
+import { TarotCard } from '../types';
+import { resolveCardAsset } from './assetManifest';
 
 export function getCardImagePath(cardId: number, deck: 'eastern' | 'chinese-ink' = 'eastern'): string {
   const pad = (n: number) => n.toString().padStart(2, '0');
@@ -31,7 +32,7 @@ export function getCardImagePath(cardId: number, deck: 'eastern' | 'chinese-ink'
     75: '75-knight-of-pentacles', 76: '76-queen-of-pentacles', 77: '77-king-of-pentacles',
   };
   const base = filenames[cardId] || pad(cardId) + '-unknown';
-  return `/cards/${deck}/${base}.png`;
+  return resolveCardAsset(deck, base);
 }
 
 // Global deck override for reactive image paths
@@ -1386,3 +1387,4 @@ export function getCardsBySuit(suit: string): TarotCard[] {
 export function getRandomCard(): TarotCard {
   return tarotCards[Math.floor(Math.random() * tarotCards.length)];
 }
+

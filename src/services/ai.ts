@@ -1,6 +1,7 @@
 import type { ChatMessage, TarotCard, CardSpread } from '../types';
 import { mentors } from '../data/mentors';
 import { getCardById } from '../data/tarotCards';
+import { sanitizeAiText } from '../utils/aiText';
 
 // ============================================================
 // AI 服务配置
@@ -130,7 +131,7 @@ async function callCloudProxy(
   if (data.error) {
     throw new Error(data.error);
   }
-  return data.result || '';
+  return sanitizeAiText(data.result || '');
 }
 
 // ============================================================
@@ -201,7 +202,7 @@ export async function chatCompletion(
       throw new Error(`AI 错误: ${data.error.message}`);
     }
 
-    return data.choices[0]?.message?.content || '';
+    return sanitizeAiText(data.choices[0]?.message?.content || '');
   } catch (error) {
     // 网络错误时也尝试 fallback
     if (model === 'primary') {
@@ -237,7 +238,7 @@ export async function* streamChatCompletion(
     const chunks = mockText.split(/(?<=。)|(?<=！)|(?<=？)|(?<=\n)/);
     for (const chunk of chunks) {
       if (chunk) {
-        yield chunk;
+        yield sanitizeAiText(chunk);
         await new Promise((r) => setTimeout(r, 50));
       }
     }
@@ -285,7 +286,7 @@ export async function* streamChatCompletion(
           try {
             const parsed = JSON.parse(data);
             const content = parsed.choices?.[0]?.delta?.content;
-            if (content) yield content;
+            if (content) yield sanitizeAiText(content);
           } catch {
             // 忽略解析错误的行
           }

@@ -1,13 +1,13 @@
-import { useNavigate } from 'react-router-dom';
+﻿import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Sparkles, BookOpen, Star, Compass, User, MoonStar, WandSparkles } from 'lucide-react';
 import BottomNav from '../components/BottomNav';
 import { useAppStore } from '../store/useAppStore';
-import { getDailyCardGuidance } from '../services/ai';
-import { getCardById, getCardImagePath } from '../data/tarotCards';
-import { useState, useMemo } from 'react';
+import { tarotCards, getCardImagePath } from '../data/tarotCards';
 import { useMagicParticles } from '../hooks/useMagicParticles';
 import { useFireflies } from '../hooks/useFireflies';
+import { useDailyInsight } from '../hooks/useDailyInsight';
+import AiResponse from '../components/AiResponse';
 import './HomePage.scss';
 
 const starPositions = [
@@ -25,10 +25,8 @@ const starPositions = [
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const { progress, dailyCard, drawDailyCard, primaryMentor, cardDeck } = useAppStore();
-  const [dailyGuidance, setDailyGuidance] = useState('');
-  const [isLoadingGuidance, setIsLoadingGuidance] = useState(false);
-  const [isFlipped, setIsFlipped] = useState(false);
+  const { progress, primaryMentor, cardDeck, dailyStudyTarget, setDailyStudyTarget } = useAppStore();
+  const { dailyCardData, currentDailyGuidance, handleDrawDaily, isFlipped, isLoadingGuidance, showGuidance } = useDailyInsight();
 
   // Initialize magic particles and fireflies
   useMagicParticles({ color: 'var(--accent-gold)', count: 8 });
@@ -36,39 +34,22 @@ export default function HomePage() {
 
   const hasCompletedQuiz = !!primaryMentor;
   const learnedCount = progress.learnedCards.length;
-  const totalCards = 78;
+  const totalCards = tarotCards.length;
   const learnProgress = Math.round((learnedCount / totalCards) * 100);
-
-  const dailyCardData = useMemo(() => {
-    if (!dailyCard) return null;
-    return getCardById(dailyCard.cardId);
-  }, [dailyCard]);
-
-  const handleDrawDaily = async () => {
-    if (dailyCard) {
-      setIsFlipped(true);
-      return;
-    }
-    const nextDailyCard = await drawDailyCard();
-    const card = getCardById(nextDailyCard.cardId);
-    if (!card) return;
-    setIsFlipped(true);
-    setIsLoadingGuidance(true);
-    try {
-      const guidance = await getDailyCardGuidance(card, nextDailyCard.orientation);
-      setDailyGuidance(guidance);
-    } catch (error) {
-      console.error('每日指引获取失败:', error);
-    } finally {
-      setIsLoadingGuidance(false);
-    }
-  };
+  const isSpreadUnlocked = learnedCount >= totalCards;
+  const studyTargets = [3, 5, 7] as const;
 
   const quickActions = [
     { icon: Compass, label: '性格测试', path: '/quiz', desc: '发现你的灵魂导师' },
     { icon: User, label: '导师选择', path: '/mentors', desc: '选择你的引路人' },
     { icon: BookOpen, label: '卡牌学习', path: '/learn', desc: '深入每张牌的奥秘' },
-    { icon: Star, label: '牌阵占卜', path: '/spread', desc: '探索命运的指引' },
+    {
+      icon: Star,
+      label: '牌阵占卜',
+      path: '/spread',
+      desc: isSpreadUnlocked ? '探索命运的指引方向' : `学完全部牌后解锁（剩余 ${totalCards - learnedCount} 张）`,
+      disabled: !isSpreadUnlocked,
+    },
   ];
 
   return (
@@ -167,13 +148,13 @@ export default function HomePage() {
             </div>
           </div>
 
-          {dailyGuidance && (
+          {showGuidance && currentDailyGuidance && (
             <motion.div
               className="daily-guidance glass-panel"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
             >
-              <p>{dailyGuidance}</p>
+              <AiResponse text={currentDailyGuidance} />
             </motion.div>
           )}
 
@@ -186,9 +167,9 @@ export default function HomePage() {
         {!hasCompletedQuiz && (
           <motion.section
             className="cta-section"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
           >
             <div className="cta-card glass-dark" onClick={() => navigate('/quiz')}>
               <div className="cta-icon"><WandSparkles size={28} /></div>
@@ -218,16 +199,46 @@ export default function HomePage() {
           </section>
         )}
 
+        <motion.section
+          className="plan-section"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.26 }}
+        >
+          <div className="plan-card glass-dark">
+            <div className="plan-copy">
+              <span className="plan-label">学习计划</span>
+              <p>每天按自己的节奏学一组，学完全部 78 张后再进入牌阵。</p>
+            </div>
+            <div className="plan-pills" role="group" aria-label="每日学习计划">
+              {studyTargets.map((target) => (
+                <button
+                  key={target}
+                  type="button"
+                  className={`plan-pill ${dailyStudyTarget === target ? 'active' : ''}`}
+                  onClick={() => setDailyStudyTarget(target)}
+                >
+                  {target} 张/天
+                </button>
+              ))}
+            </div>
+          </div>
+        </motion.section>
+
         {/* Quick Actions Grid */}
         <section className="actions-grid">
           {quickActions.map((action, i) => (
             <motion.button
               key={action.path}
-              className="action-card glass-dark"
-              onClick={() => navigate(action.path)}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 * i + 0.2 }}
+              className={`action-card glass-dark ${action.disabled ? 'disabled' : ''}`}
+              onClick={() => {
+                if (action.disabled) return;
+                navigate(action.path);
+              }}
+              disabled={action.disabled}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.08 * i + 0.15 }}
               whileTap={{ scale: 0.95 }}
             >
               <div className="action-icon">
@@ -244,3 +255,4 @@ export default function HomePage() {
     </div>
   );
 }
+

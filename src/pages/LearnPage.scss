@@ -178,7 +178,56 @@
       .meaning-text {
         color: var(--text-secondary);
         font-size: var(--text-sm);
+        line-height: 1.8;
+
+        p {
+          margin: 0;
+        }
+
+        p + p {
+          margin-top: 10px;
+        }
+      }
+    }
+
+    .reflection-callout {
+      width: 100%;
+      padding: 16px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-default);
+      background: rgba(45, 36, 29, 0.38);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+
+      .reflection-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--color-emerald);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .reflection-copy {
+        font-size: 13px;
         line-height: 1.7;
+        color: var(--text-secondary);
+      }
+
+      .reflection-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+
+        span {
+          padding: 4px 10px;
+          border-radius: 999px;
+          background: rgba(16, 185, 129, 0.12);
+          border: 1px solid rgba(16, 185, 129, 0.2);
+          color: var(--color-emerald);
+          font-size: 11px;
+        }
       }
     }
   }
@@ -366,6 +415,61 @@
           opacity: 0.45;
           cursor: not-allowed;
           box-shadow: none;
+        }
+      }
+    }
+
+    .reflection-form {
+      margin-bottom: 16px;
+      padding: 16px;
+      border-radius: 16px;
+      border: 1px solid var(--border-default);
+      background: rgba(45, 36, 29, 0.38);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+
+      .reflection-label {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--color-emerald);
+      }
+
+      .reflection-input {
+        width: 100%;
+        resize: vertical;
+        min-height: 112px;
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-default);
+        border-radius: var(--radius-md);
+        padding: 12px 14px;
+        font-size: 14px;
+        color: var(--text-primary);
+        outline: none;
+        font-family: var(--font-body);
+        line-height: 1.7;
+
+        &::placeholder { color: var(--text-muted); }
+        &:focus {
+          border-color: var(--color-emerald);
+          box-shadow: var(--shadow-emerald);
+        }
+      }
+
+      .reflection-btn {
+        min-height: 44px;
+        border-radius: var(--radius-md);
+        background: linear-gradient(135deg, var(--color-emerald), var(--color-cyan));
+        color: var(--bg-deep);
+        border: none;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        font-family: var(--font-body);
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
         }
       }
     }
