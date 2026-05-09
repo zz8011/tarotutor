@@ -37,18 +37,20 @@ interface AppState {
   upsertStudyRecord: (cardId: number, updates: Partial<StudyRecord>) => void;
   clearStudyJournalActive: () => void;
 
-  dailyCard: { cardId: number; date: string; orientation: 'upright' | 'reversed' } | null;
-  drawDailyCard: () => Promise<{ cardId: number; date: string; orientation: 'upright' | 'reversed' }>;
+  dailyCard: { cardId: number; date: string; orientation: 'upright' | 'reversed'; deck: 'eastern' | 'chinese-ink' } | null;
+  drawDailyCard: () => Promise<{ cardId: number; date: string; orientation: 'upright' | 'reversed'; deck: 'eastern' | 'chinese-ink' }>;
   dailyGuidance: {
     cardId: number;
     date: string;
     orientation: 'upright' | 'reversed';
+    deck: 'eastern' | 'chinese-ink';
     content: string;
   } | null;
   setDailyGuidance: (guidance: {
     cardId: number;
     date: string;
     orientation: 'upright' | 'reversed';
+    deck: 'eastern' | 'chinese-ink';
     content: string;
   } | null) => void;
 
@@ -133,7 +135,7 @@ function addDays(date: Date, days: number) {
 
 export const useAppStore = create<AppState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       userName: '',
       setUserName: (name) => set({ userName: name }),
       dailyStudyTarget: 3,
@@ -290,7 +292,7 @@ export const useAppStore = create<AppState>()(
         const card = getRandomCard();
         const orientation = (Math.random() > 0.5 ? 'upright' : 'reversed') as 'upright' | 'reversed';
         const today = new Date().toISOString().split('T')[0];
-        const dailyCard = { cardId: card.id, date: today, orientation };
+        const dailyCard = { cardId: card.id, date: today, orientation, deck: get().cardDeck };
         set({
           dailyCard,
           dailyGuidance: null,

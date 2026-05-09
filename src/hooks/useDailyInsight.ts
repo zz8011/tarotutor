@@ -7,6 +7,7 @@ export function useDailyInsight() {
   const {
     dailyCard,
     dailyGuidance: savedDailyGuidance,
+    cardDeck,
     drawDailyCard,
     setDailyGuidance,
   } = useAppStore();
@@ -24,7 +25,8 @@ export function useDailyInsight() {
     const matchesCard = savedDailyGuidance.cardId === dailyCard.cardId;
     const matchesDate = savedDailyGuidance.date === dailyCard.date;
     const matchesOrientation = savedDailyGuidance.orientation === dailyCard.orientation;
-    return matchesCard && matchesDate && matchesOrientation ? savedDailyGuidance.content : '';
+    const matchesDeck = savedDailyGuidance.deck === dailyCard.deck;
+    return matchesCard && matchesDate && matchesOrientation && matchesDeck ? savedDailyGuidance.content : '';
   }, [dailyCard, savedDailyGuidance]);
 
   const handleDrawDaily = async () => {
@@ -34,11 +36,12 @@ export function useDailyInsight() {
       if (!currentDailyGuidance && dailyCardData && !isLoadingGuidance) {
         setIsLoadingGuidance(true);
         try {
-          const guidance = await getDailyCardGuidance(dailyCardData, dailyCard.orientation);
+          const guidance = await getDailyCardGuidance(dailyCardData, dailyCard.orientation, dailyCard.deck);
           setDailyGuidance({
             cardId: dailyCard.cardId,
             date: dailyCard.date,
             orientation: dailyCard.orientation,
+            deck: dailyCard.deck,
             content: guidance,
           });
         } catch (error) {
@@ -57,11 +60,12 @@ export function useDailyInsight() {
     setShowGuidance(true);
     setIsLoadingGuidance(true);
     try {
-      const guidance = await getDailyCardGuidance(card, nextDailyCard.orientation);
+      const guidance = await getDailyCardGuidance(card, nextDailyCard.orientation, nextDailyCard.deck);
       setDailyGuidance({
         cardId: nextDailyCard.cardId,
         date: nextDailyCard.date,
         orientation: nextDailyCard.orientation,
+        deck: nextDailyCard.deck,
         content: guidance,
       });
     } catch (error) {
@@ -73,6 +77,7 @@ export function useDailyInsight() {
 
   return {
     dailyCardData,
+    dailyCardDeck: dailyCard?.deck || cardDeck,
     currentDailyGuidance,
     handleDrawDaily,
     isFlipped,

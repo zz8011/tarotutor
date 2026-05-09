@@ -595,7 +595,7 @@ export default function LearnPage() {
 
     try {
       let fullContent = '';
-      const stream = streamCardLearningResponse(card, orientation, prompt, baseMessages.slice(-8), mentor.id);
+      const stream = streamCardLearningResponse(card, orientation, prompt, baseMessages.slice(-8), mentor.id, cardDeck);
 
       for await (const chunk of stream) {
         fullContent += chunk;

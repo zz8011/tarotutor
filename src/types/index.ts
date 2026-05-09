@@ -217,6 +217,7 @@ export interface CardSpread {
   id: string;
   templateId: string;
   spreadTypeId?: string;
+  cardDeck?: 'eastern' | 'chinese-ink';
   date: string;
   question: string;
   positions: SpreadPosition[];

@@ -1,6 +1,7 @@
-import type { ChatMessage, TarotCard, CardSpread } from '../types';
+﻿import type { ChatMessage, TarotCard, CardSpread } from '../types';
 import { mentors } from '../data/mentors';
 import { getCardById } from '../data/tarotCards';
+import { getTarotDeckGuide, type TarotDeck } from '../data/tarotDeckGuides';
 import { sanitizeAiText } from '../utils/aiText';
 
 // ============================================================
@@ -342,30 +343,59 @@ ${mentor.personality || '温暖、富有洞察力'}
 }
 
 /**
+ * 构建牌组上下文
+ */
+function buildDeckPromptContext(deck: TarotDeck): string {
+  const guide = getTarotDeckGuide(deck);
+  return [
+    `当前牌组：${guide.label} (${deck})`,
+    `牌组视觉风格：${guide.visualGuide}`,
+    `解读约束：${guide.interpretationRule}`,
+    '硬性规则：只把当前牌面里能确认的元素说成事实；如果通用牌义或另一套牌的细节和当前画面冲突，优先按当前牌组和用户观察来讲。',
+    '学习优先级：用户对牌面的观察 > 当前牌组视觉语言 > 通用牌义。',
+  ].join("\n");
+}
+
+function buildCardVisualContext(card: TarotCard): string {
+  return [
+    `通用图像参考（仅作辅助，不可与当前牌组冲突时硬套）：${card.description}`,
+    `图像符号：${card.imageSymbol}`,
+  ].join("\n");
+}
+
+/**
  * 构建卡牌学习对话 Prompt
  */
 export function buildCardLearningPrompt(
   card: TarotCard,
   orientation: 'upright' | 'reversed',
   userMessage: string,
-  chatHistory: ChatMessage[]
+  chatHistory: ChatMessage[],
+  cardDeck: TarotDeck = 'eastern'
 ): { role: 'system' | 'user' | 'assistant'; content: string }[] {
   const systemPrompt = buildSystemPrompt();
+  const deckContext = buildDeckPromptContext(cardDeck);
 
-  const cardContext = `当前学习的卡牌：${card.name}（${card.chineseName}）
-编号：${card.id}
-元素：${card.element || '无'}
-关键词：${card.keywords?.join('、') || '暂无'}
-
-${orientation === 'upright' ? '正位含义：' : '逆位含义：'}
-${orientation === 'upright' ? card.uprightMeaning : card.reversedMeaning}
-
-行星关联：${card.planet || '暂无'}
-数字学：${card.numerology || '暂无'}
-`;
+  const cardContext = [
+    `当前学习的卡牌：${card.name} / ${card.chineseName}（编号 ${card.id}）`,
+    `牌组：${cardDeck}`,
+    `元素：${card.element || '无'}`,
+    `关键词：${card.keywords?.join('、') || '暂无'}`,
+    buildCardVisualContext(card),
+    orientation === 'upright'
+      ? `正位含义：${card.uprightMeaning}`
+      : `逆位含义：${card.reversedMeaning}`,
+    `行星关联：${card.planet || '暂无'}`,
+    `数秘学：${card.numerology || '暂无'}`,
+    '学习规则：',
+    '1. 先回应用户刚刚看到的牌面元素，再给标准讲解。',
+    '2. 用户观察到的细节优先级最高，不要推翻用户的观察。',
+    '3. 不要把未确认的细节说成事实，也不要把另一套牌的风格硬套到这张牌上。',
+    '4. 讲解时先说“你看到了什么”，再说“它通常意味着什么”，最后做总结。',
+  ].join("\n");
 
   const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
-    { role: 'system', content: `${systemPrompt}\n\n${cardContext}` },
+    { role: 'system', content: `${systemPrompt}\n\n${deckContext}\n\n${cardContext}` },
   ];
 
   // 添加历史对话（最多保留最近 10 条）
@@ -389,44 +419,53 @@ ${orientation === 'upright' ? card.uprightMeaning : card.reversedMeaning}
 export function buildSpreadInterpretationPrompt(
   spread: CardSpread,
   userQuestion: string,
-  mentorId?: string
+  mentorId?: string,
+  cardDeck: TarotDeck = spread.cardDeck || 'eastern'
 ): { role: 'system' | 'user' | 'assistant'; content: string }[] {
   const systemPrompt = buildSystemPrompt(mentorId);
+  const deckContext = buildDeckPromptContext(cardDeck);
 
   let cardsContext = '';
   for (const position of spread.positions) {
     if (position.cardId != null) {
       const card = getCardById(position.cardId);
       if (card) {
-        cardsContext += `\n【${position.name}】${position.meaning}
-卡牌：${card.name}（${position.orientation === 'upright' ? '正位' : '逆位'}）
-关键词：${card.keywords?.join('、') || '暂无'}
-`;
+        cardsContext += [
+          `- ${position.name}（${position.meaning}）`,
+          `  牌名：${card.name} / ${card.chineseName}`,
+          `  位置：${position.orientation === 'upright' ? '正位' : '逆位'}`,
+          `  关键词：${card.keywords?.join('、') || '暂无'}`,
+          `  ${buildCardVisualContext(card)}`,
+          `  ${position.orientation === 'upright' ? `正位含义：${card.uprightMeaning}` : `逆位含义：${card.reversedMeaning}`}`,
+        ].join("\n") + "\n";
       }
     }
   }
 
-  const userPrompt = `我进行了牌阵占卜。
-
-我的问题：${userQuestion || '没有特定问题，寻求 general guidance'}
-
-牌阵结果：${cardsContext}
-
-请为我解读这个牌阵：
-1. 每张牌在其位置上的含义
-2. 牌与牌之间的关联和故事线
-3. 综合建议和行动指引
-4. 保持温暖鼓励的语气，不要太宿命论
-5. 最后给出一个简短有力的一句话总结，点出核心启示
-
-输出格式要求：
-- 使用 Markdown 小标题组织内容，例如「## 核心启示」「## 牌位解读」「## 关联故事线」「## 行动建议」「## 一句话总结」
-- 每个小标题下写 1-2 个自然段
-- 段落之间必须空一行
-- 不要把所有内容写成一整段`;
+  const userPrompt = [
+    '我进行了一次牌阵占卜。',
+    `我的问题：${userQuestion || '没有特定问题，想要一般指引'}`,
+    `当前牌组：${cardDeck}`,
+    '',
+    '牌阵结果：',
+    cardsContext.trim(),
+    '',
+    '请为我解读这个牌阵，要求如下：',
+    '1. 先说明每张牌在自己位置上的含义。',
+    '2. 结合当前牌组的视觉风格来组织语言，但不要强行编造未确认的细节。',
+    '3. 讲清楚牌与牌之间的关系、故事线和变化方向。',
+    '4. 给出具体、可执行的建议。',
+    '5. 保持温暖、清晰、有层次的语气。',
+    '6. 最后用一句简洁有力的话总结核心启示。',
+    '输出格式要求：',
+    '- 使用 Markdown 小标题组织内容，例如：# 核心启示、# 牌位解读、# 关联故事线、# 行动建议、# 一句话总结。',
+    '- 每个小标题下写 1-2 个自然段。',
+    '- 段落之间必须空一行。',
+    '- 不要把所有内容写成一整段。',
+  ].join("\n");
 
   return [
-    { role: 'system', content: systemPrompt },
+    { role: 'system', content: `${systemPrompt}\n\n${deckContext}` },
     { role: 'user', content: userPrompt },
   ];
 }
@@ -436,24 +475,30 @@ export function buildSpreadInterpretationPrompt(
  */
 export function buildDailyCardPrompt(
   card: TarotCard,
-  orientation: 'upright' | 'reversed'
+  orientation: 'upright' | 'reversed',
+  cardDeck: TarotDeck = 'eastern'
 ): { role: 'system' | 'user' | 'assistant'; content: string }[] {
   const systemPrompt = buildSystemPrompt();
+  const deckContext = buildDeckPromptContext(cardDeck);
 
-  const userPrompt = `今日抽到的卡牌是：${card.name}（${orientation === 'upright' ? '正位' : '逆位'}）
-
-请为我提供：
-1. 今日能量概述（50字以内）
-2. 具体指引和建议
-3. 一个今日可以实践的小行动
-4. 以温暖的祝福结尾`;
+  const userPrompt = [
+    `今日抽到的卡牌：${card.name} / ${card.chineseName}`,
+    `牌组：${cardDeck}`,
+    `位置：${orientation === 'upright' ? '正位' : '逆位'}`,
+    buildCardVisualContext(card),
+    '请提供：',
+    '1. 今日能量概述（100字内）',
+    '2. 具体指引和建议',
+    '3. 一个今天可以实践的小行动',
+    '4. 一句温暖的结尾',
+    '请保持分段清晰，不要把所有内容写成一整段。',
+  ].join("\n");
 
   return [
-    { role: 'system', content: systemPrompt },
+    { role: 'system', content: `${systemPrompt}\n\n${deckContext}` },
     { role: 'user', content: userPrompt },
   ];
 }
-
 /**
  * 构建性格测试后的欢迎消息 Prompt
  */
@@ -546,9 +591,10 @@ export async function getCardLearningResponse(
   orientation: 'upright' | 'reversed',
   userMessage: string,
   chatHistory: ChatMessage[],
-  mentorId?: string
+  mentorId?: string,
+  cardDeck: TarotDeck = 'eastern'
 ): Promise<string> {
-  const messages = buildCardLearningPrompt(card, orientation, userMessage, chatHistory);
+  const messages = buildCardLearningPrompt(card, orientation, userMessage, chatHistory, cardDeck);
   // 如果有导师，替换 system prompt
   if (mentorId) {
     messages[0].content = buildSystemPrompt(mentorId) + '\n\n' + messages[0].content.split('\n\n')[1];
@@ -564,9 +610,10 @@ export async function* streamCardLearningResponse(
   orientation: 'upright' | 'reversed',
   userMessage: string,
   chatHistory: ChatMessage[],
-  mentorId?: string
+  mentorId?: string,
+  cardDeck: TarotDeck = 'eastern'
 ): AsyncGenerator<string, void, unknown> {
-  const messages = buildCardLearningPrompt(card, orientation, userMessage, chatHistory);
+  const messages = buildCardLearningPrompt(card, orientation, userMessage, chatHistory, cardDeck);
   if (mentorId) {
     messages[0].content = buildSystemPrompt(mentorId) + '\n\n' + messages[0].content.split('\n\n')[1];
   }
@@ -579,9 +626,10 @@ export async function* streamCardLearningResponse(
 export async function getSpreadInterpretation(
   spread: CardSpread,
   userQuestion: string,
-  mentorId?: string
+  mentorId?: string,
+  cardDeck: TarotDeck = spread.cardDeck || 'eastern'
 ): Promise<string> {
-  const messages = buildSpreadInterpretationPrompt(spread, userQuestion, mentorId);
+  const messages = buildSpreadInterpretationPrompt(spread, userQuestion, mentorId, cardDeck);
   return chatCompletion(messages, { temperature: 0.7, maxTokens: 1500 });
 }
 
@@ -590,12 +638,12 @@ export async function getSpreadInterpretation(
  */
 export async function getDailyCardGuidance(
   card: TarotCard,
-  orientation: 'upright' | 'reversed'
+  orientation: 'upright' | 'reversed',
+  cardDeck: TarotDeck = 'eastern'
 ): Promise<string> {
-  const messages = buildDailyCardPrompt(card, orientation);
+  const messages = buildDailyCardPrompt(card, orientation, cardDeck);
   return chatCompletion(messages, { temperature: 0.9, maxTokens: 600 });
 }
-
 /**
  * 获取欢迎消息
  */
@@ -607,3 +655,4 @@ export async function getWelcomeMessage(
   const messages = buildWelcomePrompt(personalityType, primaryMentorId, mentorName);
   return chatCompletion(messages, { temperature: 0.9, maxTokens: 800 });
 }
+

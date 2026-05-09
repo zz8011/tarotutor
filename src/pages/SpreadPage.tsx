@@ -69,6 +69,7 @@ export default function SpreadPage() {
       const spreadObj: CardSpread = {
         id: Date.now().toString(),
         templateId: selectedSpread.id,
+        cardDeck,
         date: new Date().toISOString(),
         question: userQuestion,
         positions: drawnCards.map((c, i) => ({
@@ -83,7 +84,7 @@ export default function SpreadPage() {
       };
 
       const combinedContext = `${userQuestion}\n\n用户第一感受：${userReflection.trim()}`;
-      const result = await getSpreadInterpretation(spreadObj, combinedContext);
+      const result = await getSpreadInterpretation(spreadObj, combinedContext, undefined, cardDeck);
       setInterpretation(result);
       addSpread({ ...spreadObj, interpretation: result });
       setPhase('done');
