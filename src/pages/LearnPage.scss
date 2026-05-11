@@ -214,6 +214,11 @@
     cursor: pointer;
     transition: all 0.2s var(--ease-out);
 
+    &:hover {
+      border-color: var(--border-hover);
+      color: var(--text-primary);
+    }
+
     &:disabled {
       opacity: 0.45;
       cursor: not-allowed;

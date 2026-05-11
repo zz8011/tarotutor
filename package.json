@@ -6,8 +6,13 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:tencent": "node scripts/generate-cos-manifest.mjs && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "cos:manifest": "node scripts/generate-cos-manifest.mjs",
+    "cos:upload": "powershell -ExecutionPolicy Bypass -File scripts/upload-cos-assets.ps1",
+    "oss:upload": "powershell -ExecutionPolicy Bypass -File scripts/upload-oss-assets.ps1",
+    "deploy:tencent": "powershell -ExecutionPolicy Bypass -File deploy/deploy-tencent.ps1",
     "test": "vitest run",
     "test:watch": "vitest"
   },

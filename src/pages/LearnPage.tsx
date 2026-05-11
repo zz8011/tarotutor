@@ -1,10 +1,10 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, BookOpen, CircleCheckBig, MessageCircle, RotateCcw, Send, Sparkles, WandSparkles, X } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Send, Sparkles, X } from 'lucide-react';
 import BottomNav from '../components/BottomNav';
 import AiResponse from '../components/AiResponse';
-import { CardDisplay, StageProgress, ChatInterface, QuizPanel } from '../components/learn';
+import { CardDisplay, StageProgress, QuizPanel } from '../components/learn';
 import { tarotCards, getCardById, getCardImagePath } from '../data/tarotCards';
 import { getDefaultMentor, getMentorById } from '../data/mentors';
 import { streamCardLearningResponse } from '../services/ai';

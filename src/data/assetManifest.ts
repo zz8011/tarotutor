@@ -12,6 +12,13 @@ type AssetManifest = {
 let manifest: AssetManifest | null = null;
 const localFallbackImage = new URL('../assets/hero.png', import.meta.url).href;
 const localCardBackFallback = new URL('../assets/card-back-fallback.svg', import.meta.url).href;
+const defaultManifestUrl = './cos-assets.json';
+
+function getEnvValue(key: string): string | undefined {
+  const env = import.meta.env as Record<string, string | undefined>;
+  const value = env[key];
+  return value && value.trim() ? value.trim() : undefined;
+}
 
 /** 计算字符串的简单哈希（FNV-1a），用于资源清单完整性校验 */
 function fnv1aHash(str: string): string {
@@ -25,11 +32,14 @@ function fnv1aHash(str: string): string {
 
 /** 校验资源清单完整性 */
 function verifyManifestIntegrity(data: AssetManifest, rawText: string): boolean {
+  void rawText;
   if (!data.integrity) {
     // 无 integrity 字段时跳过校验（向后兼容）
     return true;
   }
-  const computed = fnv1aHash(rawText);
+  const { integrity, ...unsignedData } = data;
+  void integrity;
+  const computed = fnv1aHash(JSON.stringify(unsignedData, null, 2));
   if (computed !== data.integrity) {
     console.error(`[AssetManifest] 完整性校验失败: expected=${data.integrity}, computed=${computed}`);
     return false;
@@ -41,11 +51,29 @@ function verifyManifestIntegrity(data: AssetManifest, rawText: string): boolean 
 function isTrustedAssetURL(url: string): boolean {
   try {
     const parsed = new URL(url);
+    const configuredHosts = [
+      getEnvValue('VITE_COS_ASSET_BASE_URL'),
+      getEnvValue('VITE_OSS_ASSET_BASE_URL'),
+      getEnvValue('VITE_ALI_OSS_ASSET_BASE_URL'),
+      getEnvValue('VITE_ASSET_BASE_URL'),
+    ]
+      .filter(Boolean)
+      .map((value) => new URL(value as string).hostname);
+    const extraHosts = (getEnvValue('VITE_TRUSTED_ASSET_HOSTS') || '')
+      .split(',')
+      .map((host) => host.trim())
+      .filter(Boolean);
     const trustedDomains = [
       'localhost',
       '127.0.0.1',
+      'myqcloud.com',
+      'qcloudcdn.com',
+      'aliyuncs.com',
+      'alicdn.com',
       'tarot-assets.oss-cn-beijing.aliyuncs.com',
       'tarot-assets.oss.aliyuncs.com',
+      ...configuredHosts,
+      ...extraHosts,
     ];
     return trustedDomains.some((d) => parsed.hostname === d || parsed.hostname.endsWith('.' + d));
   } catch {
@@ -57,7 +85,8 @@ export async function loadAssetManifest(): Promise<void> {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
-    const response = await fetch('./oss-assets-v2.json', {
+    const manifestUrl = getEnvValue('VITE_ASSET_MANIFEST_URL') || defaultManifestUrl;
+    const response = await fetch(manifestUrl, {
       cache: 'no-store',
       signal: controller.signal,
     });

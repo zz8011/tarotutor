@@ -1,4 +1,3 @@
-import { AnimatePresence, motion } from 'framer-motion';
 import { MessageCircle, Send } from 'lucide-react';
 
 export interface ReflectionInputProps {

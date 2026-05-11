@@ -21,9 +21,6 @@ export interface ChatInterfaceProps {
 
 export default function ChatInterface({
   messages,
-  stage,
-  isStreaming,
-  awaitingRecap,
   composerValue,
   composerPlaceholder,
   composerDisabled,
