@@ -23,4 +23,31 @@ export const CLOUD_FUNCTIONS = {
   },
 };
 
-export const proxyBaseURL = CLOUD_FUNCTIONS.dev.baseURL;
+function validateProxyURL(url: string): string {
+  if (!url) return '';
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      console.error(`[AI Config] 拒绝不安全的代理协议: ${parsed.protocol}`);
+      return '';
+    }
+    // 禁止 localhost 以外的内网地址（生产环境）
+    const hostname = parsed.hostname;
+    const isPrivate =
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname.startsWith('192.168.') ||
+      hostname.startsWith('10.') ||
+      hostname.startsWith('172.');
+    if (isPrivate && import.meta.env.PROD) {
+      console.error(`[AI Config] 生产环境禁止内网代理地址: ${url}`);
+      return '';
+    }
+    return url;
+  } catch {
+    console.error(`[AI Config] 无效的代理 URL: ${url}`);
+    return '';
+  }
+}
+
+export const proxyBaseURL = validateProxyURL(CLOUD_FUNCTIONS.dev.baseURL);

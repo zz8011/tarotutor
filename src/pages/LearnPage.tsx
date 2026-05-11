@@ -168,16 +168,29 @@ function buildChoiceQuiz(card: TarotCard, orientation: Orientation): ChoiceQuest
   ];
 }
 
+function sanitizeUserInput(input: string): string {
+  // 移除潜在的 prompt 注入标记
+  return input
+    .replace(/\[\/system\]/gi, '')
+    .replace(/\[system\]/gi, '')
+    .replace(/ignore previous instructions/gi, '[已过滤]')
+    .replace(/ignore all previous/gi, '[已过滤]')
+    .replace(/you are now/gi, '[已过滤]')
+    .slice(0, 500); // 限制长度
+}
+
 function buildTeachingPrompt(
   card: TarotCard,
   orientation: Orientation,
   firstObservation: string,
   symbolObservation: string
 ) {
+  const safeFirst = sanitizeUserInput(firstObservation);
+  const safeSymbol = sanitizeUserInput(symbolObservation);
   return [
     `学员正在学习 ${card.chineseName}${orientation === 'upright' ? '正位' : '逆位'}。`,
-    `学员第一观察：${firstObservation}`,
-    `学员牌面细节观察：${symbolObservation}`,
+    `学员第一观察：${safeFirst}`,
+    `学员牌面细节观察：${safeSymbol}`,
     '请你作为导师，按照这个顺序带学：',
     '1. 先回应学员观察中准确的地方。',
     '2. 指出一个需要校正或补充的地方，但语气要温和。',
@@ -195,11 +208,12 @@ function buildScenarioFeedbackPrompt(
   scenario: ScenarioPrompt,
   scenarioAnswer: string
 ) {
+  const safeAnswer = sanitizeUserInput(scenarioAnswer);
   return [
     `学员正在学习 ${card.chineseName}${orientation === 'upright' ? '正位' : '逆位'}，刚完成情境练习。`,
     `练习场景：${scenario.situation}`,
     `练习问题：${scenario.question}`,
-    `学员回答：${scenarioAnswer}`,
+    `学员回答：${safeAnswer}`,
     '请你像导师批改作业一样反馈：',
     '1. 先指出回答里已经抓到的点。',
     '2. 再指出遗漏或偏差。',

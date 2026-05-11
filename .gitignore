@@ -30,3 +30,4 @@ browser-test-*.css
 .superdesign
 .claude
 src/**/*.css.map
+.env.local
