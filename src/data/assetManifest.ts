@@ -11,13 +11,25 @@ let manifest: AssetManifest | null = null;
 const localFallbackImage = new URL('../assets/hero.png', import.meta.url).href;
 const localCardBackFallback = new URL('../assets/card-back-fallback.svg', import.meta.url).href;
 
-export async function loadAssetManifest() {
+export async function loadAssetManifest(): Promise<void> {
   try {
-    const response = await fetch('./oss-assets-v2.json', { cache: 'no-store' });
-    if (!response.ok) return;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const response = await fetch('./oss-assets-v2.json', {
+      cache: 'no-store',
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    if (!response.ok) {
+      console.warn(`[AssetManifest] 加载失败: HTTP ${response.status}`);
+      manifest = null;
+      return;
+    }
     const data = await response.json() as AssetManifest;
     manifest = data;
-  } catch {
+    console.log('[AssetManifest] 加载成功');
+  } catch (err) {
+    console.warn('[AssetManifest] 加载失败:', err instanceof Error ? err.message : String(err));
     manifest = null;
   }
 }

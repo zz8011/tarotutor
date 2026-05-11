@@ -9,6 +9,7 @@ import { useMagicParticles } from '../hooks/useMagicParticles';
 import { useFireflies } from '../hooks/useFireflies';
 import { useDailyInsight } from '../hooks/useDailyInsight';
 import AiResponse from '../components/AiResponse';
+import LazyImage from '../components/common/LazyImage';
 import './HomePage.scss';
 
 const studyStageLabel = {
@@ -116,7 +117,7 @@ export default function HomePage() {
             <div className="card-inner">
               <div className="card-front daily-card">
                 <div className="card-back-art">
-                  <img src={resolveCardBackAsset(dailyCardDeck)} alt="塔罗牌背" className="daily-card-back-image" />
+                  <LazyImage src={resolveCardBackAsset(dailyCardDeck)} alt="塔罗牌背" className="daily-card-back-image" placeholder="card-back" />
                   <div className="card-back-caption">
                     <MoonStar size={22} className="card-icon" />
                     <span className="card-hint">点击翻开灵感</span>
@@ -127,11 +128,11 @@ export default function HomePage() {
                 {dailyCardData ? (
                   <div className="card-face">
                     <div className="card-image-area">
-                      <img
+                      <LazyImage
                         src={getCardImagePath(dailyCardData.id, dailyCardDeck)}
                         alt={dailyCardData.chineseName}
                         className="daily-card-image"
-                        key={`daily-${dailyCardData.id}-${dailyCardDeck}`}
+                        placeholder="skeleton"
                       />
                       <div className="card-number-label">{dailyCardData.number}</div>
                     </div>

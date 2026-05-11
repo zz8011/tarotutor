@@ -7,6 +7,7 @@ import { tarotCards, getCardImagePath } from '../data/tarotCards';
 import { useMagicParticles } from '../hooks/useMagicParticles';
 import { useAppStore } from '../store/useAppStore';
 import type { TarotCard } from '../types';
+import LazyImage from '../components/common/LazyImage';
 import './CardLibraryPage.scss';
 
 type FilterType = 'all' | 'major' | 'wands' | 'cups' | 'swords' | 'pentacles';
@@ -93,12 +94,11 @@ export default function CardLibraryPage() {
               <div className="tile-arcana-badge">
                 {card.arcana === 'major' ? '大阿' : card.suit?.slice(0, 1).toUpperCase()}
               </div>
-              <img
+              <LazyImage
                 src={getCardImagePath(card.id, cardDeck)}
                 alt={card.chineseName}
                 className="tile-card-image"
-                loading="lazy"
-                key={`${card.id}-${cardDeck}`}
+                placeholder="skeleton"
               />
               <div className="tile-info">
                 <span className="tile-name">{card.chineseName}</span>

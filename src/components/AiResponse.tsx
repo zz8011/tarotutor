@@ -109,7 +109,7 @@ export default function AiResponse({ text, className }: AiResponseProps) {
   return (
     <div className={['ai-response', className].filter(Boolean).join(' ')}>
       {blocks.map((block, index) => (
-        <div className="ai-response__block" key={`${index}-${block.slice(0, 12)}`}>
+        <div className="ai-response__block" key={`block-${index}`}>
           {renderParagraph(block)}
         </div>
       ))}

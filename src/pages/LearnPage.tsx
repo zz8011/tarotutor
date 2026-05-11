@@ -1,19 +1,10 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import {
-  ArrowLeft,
-  BookOpen,
-  CircleCheckBig,
-  MessageCircle,
-  RotateCcw,
-  Send,
-  Sparkles,
-  WandSparkles,
-  X,
-} from 'lucide-react';
+import { ArrowLeft, BookOpen, CircleCheckBig, MessageCircle, RotateCcw, Send, Sparkles, WandSparkles, X } from 'lucide-react';
 import BottomNav from '../components/BottomNav';
 import AiResponse from '../components/AiResponse';
+import { CardDisplay, StageProgress, ChatInterface, QuizPanel } from '../components/learn';
 import { tarotCards, getCardById, getCardImagePath } from '../data/tarotCards';
 import { getDefaultMentor, getMentorById } from '../data/mentors';
 import { streamCardLearningResponse } from '../services/ai';
@@ -22,8 +13,8 @@ import { useMagicParticles } from '../hooks/useMagicParticles';
 import type { ChatMessage, LearningPhase, StudyStage, TarotCard } from '../types';
 import './LearnPage.scss';
 
-type Orientation = 'upright' | 'reversed';
-type QuizAnswerMap = Record<string, string>;
+export type Orientation = 'upright' | 'reversed';
+export type QuizAnswerMap = Record<string, string>;
 
 interface ChoiceQuestion {
   id: string;
@@ -347,7 +338,6 @@ export default function LearnPage() {
 
   const scenario = useMemo(() => buildScenario(card, orientation), [card, orientation]);
   const quizQuestions = useMemo(() => buildChoiceQuiz(card, orientation), [card, orientation]);
-  const cardImagePath = getCardImagePath(card.id, cardDeck);
   const currentMeaning = orientation === 'upright' ? card.uprightMeaning : card.reversedMeaning;
   const dueReviewCount = Object.values(studyJournal.records).filter((record) => {
     if (!record.nextReviewAt) return false;
@@ -358,7 +348,6 @@ export default function LearnPage() {
   const allChoicesAnswered = answeredChoiceCount === quizQuestions.length;
   const choiceQuizPassed = quizResult === 'correct' && correctChoiceCount === quizQuestions.length;
   const awaitingRecap = stage === 'quiz' && choiceQuizPassed && !quizAnswers.recap;
-  const progressIndex = Math.max(stageOrder.indexOf(stage), 0);
 
   useLayoutEffect(() => {
     const sessionForCard = currentSession?.cardId === card.id ? currentSession : null;
@@ -872,62 +861,20 @@ export default function LearnPage() {
       <main className="learn-main">
         <section className="card-anchor">
           <div className="fixed-card">
-            <motion.div
-              className="card-visual"
-              animate={{ rotate: orientation === 'reversed' ? 180 : 0 }}
-              transition={{ duration: 0.4 }}
-            >
-              <button className="card-zoom-trigger" type="button" onClick={() => setIsImageOpen(true)}>
-                <img src={cardImagePath} alt={card.chineseName} className="card-image" />
-              </button>
-            </motion.div>
-
-            <div className="card-study-info">
-              <div className="study-kicker">牌面常驻 · 导师陪练</div>
-              <h2>{card.chineseName}</h2>
-              <p>{card.name}</p>
-
-              <div className="stage-track" aria-label="学习阶段">
-                {stageOrder.map((item, index) => (
-                  <span
-                    key={item}
-                    className={`stage-dot ${stage === item ? 'active' : ''} ${index < progressIndex ? 'done' : ''}`}
-                    title={stageLabels[item]}
-                  />
-                ))}
-              </div>
-
-              <div className="study-meta">
-                <span>{stageLabels[stage]}</span>
-                <span>待复习 {dueReviewCount}</span>
-                <span>本地已保存</span>
-              </div>
-
-              <div className="orientation-row">
-                <button
-                  className={`orient-btn ${orientation === 'upright' ? 'active' : ''}`}
-                  onClick={() => handleOrientationChange('upright')}
-                  disabled={isStreaming}
-                >
-                  正位
-                </button>
-                <button
-                  className="flip-btn"
-                  onClick={() => handleOrientationChange(orientation === 'upright' ? 'reversed' : 'upright')}
-                  disabled={isStreaming}
-                  aria-label="翻转牌面"
-                >
-                  <RotateCcw size={14} />
-                </button>
-                <button
-                  className={`orient-btn ${orientation === 'reversed' ? 'active' : ''}`}
-                  onClick={() => handleOrientationChange('reversed')}
-                  disabled={isStreaming}
-                >
-                  逆位
-                </button>
-              </div>
-            </div>
+            <CardDisplay
+              card={card}
+              orientation={orientation}
+              cardDeck={cardDeck}
+              onOrientationChange={handleOrientationChange}
+              onImageOpen={() => setIsImageOpen(true)}
+              disabled={isStreaming}
+            />
+            <StageProgress
+              stage={stage}
+              stageOrder={stageOrder}
+              stageLabels={stageLabels}
+              dueReviewCount={dueReviewCount}
+            />
           </div>
         </section>
 
@@ -958,92 +905,18 @@ export default function LearnPage() {
             </AnimatePresence>
 
             {(stage === 'quiz' || stage === 'mastered') && (
-              <div className="chat-bubble assistant challenge-bubble">
-                <div className="challenge-head">
-                  <WandSparkles size={16} />
-                  <span>导师掌握测试</span>
-                </div>
-
-                <div className="quiz-progress">
-                  <span>
-                    选择题 {correctChoiceCount}/{quizQuestions.length}
-                  </span>
-                  <span>
-                    {quizResult === 'correct'
-                      ? '合格'
-                      : quizResult === 'incorrect'
-                        ? '需重学'
-                        : allChoicesAnswered
-                          ? '待点评'
-                          : '进行中'}
-                  </span>
-                </div>
-
-                {quizQuestions.map((question) => {
-                  const answer = quizAnswers[question.id];
-
-                  return (
-                    <div className="quiz-question" key={question.id}>
-                      <div className="quiz-label">{question.label}</div>
-                      <p>{question.prompt}</p>
-                      <div className="quiz-options">
-                        {question.options.map((option) => {
-                          const isSelected = answer === option;
-                          const isCorrect = option === question.correctAnswer;
-                          const stateClass =
-                            choiceQuizPassed && isSelected && isCorrect
-                              ? 'correct'
-                              : quizResult === 'incorrect' && isSelected && !isCorrect
-                                ? 'wrong'
-                                : quizResult === 'incorrect' && isCorrect
-                                  ? 'revealed'
-                                  : isSelected
-                                    ? 'selected'
-                                    : '';
-
-                          return (
-                            <button
-                              key={option}
-                              className={`quiz-option ${stateClass}`}
-                              onClick={() => handleQuizChoice(question, option)}
-                              disabled={isStreaming || stage === 'mastered' || choiceQuizPassed}
-                            >
-                              {option}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {allChoicesAnswered && !choiceQuizPassed && (
-                  <button className="quiz-submit-btn" onClick={handleQuizSubmit} disabled={isStreaming}>
-                    {quizResult === 'incorrect' ? '重新提交导师点评' : '提交给导师点评'}
-                  </button>
-                )}
-
-                {quizResult === 'incorrect' && (
-                  <div className="recap-callout retry">
-                    <BookOpen size={15} />
-                    <span>导师已指出不合格点。请重选薄弱题目，再提交点评。</span>
-                  </div>
-                )}
-
-                {choiceQuizPassed && stage !== 'mastered' && (
-                  <div className="recap-callout">
-                    <BookOpen size={15} />
-                    <span>导师点评合格。现在在输入框里用自己的话完成一句话复述。</span>
-                  </div>
-                )}
-
-                {stage === 'mastered' && (
-                  <div className="recap-callout success">
-                    <CircleCheckBig size={15} />
-                    <span>这张牌已进入复习队列。</span>
-                  </div>
-                )}
-              </div>
+              <QuizPanel
+                questions={quizQuestions}
+                answers={quizAnswers}
+                quizResult={quizResult}
+                choiceQuizPassed={choiceQuizPassed}
+                allChoicesAnswered={allChoicesAnswered}
+                correctChoiceCount={correctChoiceCount}
+                stage={stage}
+                isStreaming={isStreaming}
+                onChoice={handleQuizChoice}
+                onSubmit={handleQuizSubmit}
+              />
             )}
 
             <div ref={chatEndRef} />
@@ -1109,7 +982,7 @@ export default function LearnPage() {
                 <X size={18} />
               </button>
               <img
-                src={cardImagePath}
+                src={getCardImagePath(card.id, cardDeck)}
                 alt={`${card.chineseName} ${orientation === 'upright' ? '正位' : '逆位'}`}
                 className={orientation === 'reversed' ? 'reversed' : ''}
               />

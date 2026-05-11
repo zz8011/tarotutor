@@ -6,6 +6,17 @@ export default defineConfig({
   plugins: [react()],
   base: './',
   build: {
-    sourcemap: true,
+    sourcemap: process.env.NODE_ENV !== 'production',
+    chunkSizeWarningLimit: 500,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          animation: ['framer-motion'],
+          icons: ['lucide-react'],
+          state: ['zustand'],
+        },
+      },
+    },
   },
 })

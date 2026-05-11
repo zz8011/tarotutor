@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { sanitizeAiText } from '../utils/aiText';
 import type {
   UserProgress,
   LearningSession,
@@ -12,7 +13,7 @@ import type {
   StudyStage,
 } from '../types';
 import { appStorage } from '../platform/storage';
-import { setActiveDeck } from '../data/tarotCards';
+
 
 interface AppState {
   userName: string;
@@ -315,12 +316,22 @@ export const useAppStore = create<AppState>()(
       cardDeck: 'eastern' as 'eastern' | 'chinese-ink',
       setCardDeck: (deck) => {
         set({ cardDeck: deck });
-        setActiveDeck(deck);
       },
     }),
     {
       name: 'tarot-tutor-storage',
+      version: 1, // schema 版本，变更时递增以触发迁移
       storage: appStorage,
+      migrate: (persistedState: unknown, version: number) => {
+        // 版本 0 -> 1: 添加 cardDeck 字段默认值
+        if (version < 1) {
+          const state = persistedState as Record<string, unknown>;
+          if (!state.cardDeck) {
+            state.cardDeck = 'eastern';
+          }
+        }
+        return persistedState as AppState;
+      },
       partialize: (state) => ({
         userName: state.userName,
         dailyStudyTarget: state.dailyStudyTarget,
@@ -335,8 +346,15 @@ export const useAppStore = create<AppState>()(
         cardDeck: state.cardDeck,
       }),
       onRehydrateStorage: () => (state) => {
-        if (state?.cardDeck) {
-          setActiveDeck(state.cardDeck);
+        // 数据恢复后对 AI 内容进行重新净化
+        if (state?.dailyGuidance?.content) {
+          state.dailyGuidance.content = sanitizeAiText(state.dailyGuidance.content);
+        }
+        if (state?.currentSession?.messages) {
+          state.currentSession.messages = state.currentSession.messages.map((msg) => ({
+            ...msg,
+            content: sanitizeAiText(msg.content),
+          }));
         }
       },
     }
