@@ -1,0 +1,9 @@
+{
+  "name": "tarot-ai-proxy",
+  "version": "1.0.0",
+  "description": "AI API proxy for tarot-tutor",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

@@ -1,0 +1,103 @@
+/* ===== Superdesign Design Tokens ===== */
+/* 塔罗导师小程序 - 设计系统变量 */
+
+/* ---- Accessibility: Reduced Motion ---- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+:root {
+  /* ---- Colors (from design-system.md) ---- */
+  --bg-deep: #0f0d0a;
+  --bg-velvet: #17130e;
+  --bg-card: rgba(28, 23, 17, 0.9);
+  --bg-elevated: #1a1612;
+  --bg-input: rgba(28, 23, 17, 0.8);
+
+  /* RGB variants for rgba() usage */
+  --bg-deep-rgb: 15, 13, 10;
+  --bg-elevated-rgb: 26, 22, 18;
+  --color-primary-rgb: 212, 176, 102;
+  --color-emerald-rgb: 111, 174, 155;
+
+  /* Primary colors */
+  --color-primary: #d4b066;
+  --color-primary-dark: #8b6e37;
+  --primary-purple: #7b5d46;
+
+  /* Accent colors */
+  --color-emerald: #6fae9b;
+  --color-emerald-bright: #10b981;
+  --color-rose: #a76552;
+  --color-cyan: #8dc7b5;
+  --accent-moon: #f2e6cf;
+  --accent-gold: #d4b066;
+  --accent-rose: #a76552;
+  --accent-emerald: #6fae9b;
+  --accent-cyan: #8dc7b5;
+
+  /* Text colors */
+  --text-primary: #f4ead8;
+  --text-secondary: #c8bba5;
+  --text-muted: #948672;
+  --text-gold: #d8b66d;
+
+  /* Border colors - unified values */
+  --border-subtle: rgba(212, 176, 102, 0.2);
+  --border-glow: rgba(141, 199, 181, 0.36);
+  --border-default: rgba(212, 176, 102, 0.15);
+  --border-hover: rgba(212, 176, 102, 0.3);
+  --border-active: rgba(212, 176, 102, 0.4);
+
+  /* Shadows */
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-gold: 0 0 20px rgba(212, 176, 102, 0.4);
+  --shadow-gold-soft: 0 0 10px rgba(212, 176, 102, 0.3);
+  --shadow-emerald: 0 0 10px rgba(111, 174, 155, 0.5);
+
+  /* ---- Typography ---- */
+  --font-display: 'Cinzel', 'Noto Serif SC', Georgia, serif;
+  --font-heading: 'Noto Serif SC', Georgia, serif;
+  --font-body: 'Noto Sans SC', PingFang SC, sans-serif;
+
+  --text-xs: 10px;
+  --text-sm: 12px;
+  --text-base: 14px;
+  --text-lg: 16px;
+  --text-xl: 18px;
+  --text-2xl: 20px;
+  --text-3xl: 24px;
+  --text-4xl: 30px;
+
+  /* ---- Spacing ---- */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* ---- Layout ---- */
+  --header-padding-x: 24px;
+  --header-padding-top: 56px;
+
+  /* ---- Radius (design spec: 6px/8px/10px) ---- */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* ---- Layout ---- */
+  --page-max: 480px;
+  --nav-height: 72px;
+
+  /* ---- Transitions ---- */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-bounce: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}

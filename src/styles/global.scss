@@ -1,0 +1,301 @@
+// ===== Mystic Tarot Academy - Global Styles =====
+// Based on Superdesign AI Design System
+
+@import './tokens.css';
+
+// Design tokens are defined in tokens.css, imported above.
+// Do NOT redeclare :root variables here — edit tokens.css instead.
+
+// Reset
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+// ---- Google Fonts ----
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+// ---- Accessibility: Reduced Motion ----
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+// ---- Global Focus Visible ----
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+// Remove default outline for mouse users
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+html, body, #root {
+  width: 100%;
+  min-height: 100vh;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+// Scrollbar
+::-webkit-scrollbar {
+  width: 3px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(212, 176, 102, 0.3);
+  border-radius: 10px;
+}
+
+// ---- Utility Classes ----
+.page-container {
+  min-height: 100vh;
+  padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + 16px);
+  position: relative;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #f3e5ab 0%, #d4b066 50%, #8b6e37 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glass-dark {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(212, 176, 102, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.glass-panel {
+  background: rgba(45, 36, 29, 0.4);
+  border: 1px solid rgba(212, 175, 55, 0.15);
+  backdrop-filter: blur(10px);
+}
+
+.gold-glow {
+  text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+}
+
+// ---- Card Flip Animation ----
+.card-container {
+  perspective: 1000px;
+}
+
+.card-inner {
+  transition: transform 0.8s var(--ease-bounce);
+  transform-style: preserve-3d;
+}
+
+.card-flipped .card-inner {
+  transform: rotateY(180deg);
+}
+
+.card-front, .card-back {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.card-back {
+  transform: rotateY(180deg);
+}
+
+// ---- Star Animation ----
+@keyframes twinkle {
+  0%, 100% { opacity: 0; transform: scale(0.5); }
+  50% { opacity: 0.8; transform: scale(1.2); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) rotate(45deg); }
+}
+
+@keyframes rise {
+  0% { transform: translateY(0) scale(0); opacity: 0; }
+  50% { opacity: 0.6; }
+  100% { transform: translateY(-100px) scale(1.5); opacity: 0; }
+}
+
+@keyframes deal-fly {
+  0% { transform: translateY(300px) scale(0.5) rotate(45deg); opacity: 0; }
+  100% { transform: translateY(0) scale(1) rotate(0); opacity: 1; }
+}
+
+// ---- Button Styles ----
+.btn-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 32px;
+  background: linear-gradient(135deg, #d4b066 0%, #8b6e37 100%);
+  color: #0f0d0a;
+  font-weight: 700;
+  border-radius: var(--radius-full);
+  border: none;
+  cursor: pointer;
+  font-size: var(--text-base);
+  transition: all 0.3s var(--ease-out);
+
+  &:hover {
+    box-shadow: 0 0 20px rgba(212, 176, 102, 0.4);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: scale(0.96);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: rgba(212, 176, 102, 0.05);
+  color: var(--color-primary);
+  border: 1px solid rgba(212, 176, 102, 0.2);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  transition: all 0.3s var(--ease-out);
+
+  &:hover {
+    background: rgba(212, 176, 102, 0.12);
+    border-color: rgba(212, 176, 102, 0.35);
+  }
+
+  &:active {
+    transform: scale(0.96);
+    background: rgba(212, 176, 102, 0.1);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}
+
+// ---- Loading ----
+.loading-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 16px;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+
+  .loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 2px solid rgba(212, 176, 102, 0.2);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+// ---- Magic Particle Click Effect ----
+.magic-particle {
+  position: fixed;
+  width: 4px;
+  height: 4px;
+  background: radial-gradient(circle, var(--accent-gold) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  animation: particle-fly 1s ease-out forwards;
+}
+
+@keyframes particle-fly {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--tx), var(--ty)) scale(0);
+    opacity: 0;
+  }
+}
+
+// ---- Firefly Animation ----
+.firefly {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: var(--accent-gold);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--accent-gold), 0 0 12px var(--accent-emerald);
+  opacity: 0;
+  animation: firefly-float 4s ease-in-out infinite;
+}
+
+@keyframes firefly-float {
+  0%, 100% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.5);
+  }
+  25% {
+    opacity: 0.8;
+    transform: translate(var(--move-x), var(--move-y)) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(calc(var(--move-x) * 0.5), calc(var(--move-y) * 1.5)) scale(1.2);
+  }
+  75% {
+    opacity: 0.6;
+    transform: translate(calc(var(--move-x) * 1.5), calc(var(--move-y) * 0.5)) scale(0.8);
+  }
+}
+
+// ---- Border Glow Effect ----
+.border-glow {
+  border: 1px solid var(--border-glow);
+  box-shadow: 0 0 8px var(--border-glow);
+}
+
+// ---- Moonlight White Text ----
+.text-moon {
+  color: var(--accent-moon);
+}
+
+// ---- Primary Purple (Bronze) ----
+.text-bronze {
+  color: var(--primary-purple);
+}
+
+.bg-bronze {
+  background-color: var(--primary-purple);
+}
