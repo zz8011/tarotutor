@@ -1,8 +1,45 @@
+# Dependencies
 node_modules/
+
+# Build output
 dist/
-.env.local
-.env.production
+build/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Secrets / certs
+*.pem
+*.key
+*.p12
+*.pfx
+
+# IDE
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Tooling local state
+.opencode/
+
+# Images go through cos:upload / oss:upload manifest pipeline, not git
 *.png
 *.jpg
 *.jpeg
+*.gif
+*.webp
+
+# Logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Coverage
+coverage/
+
