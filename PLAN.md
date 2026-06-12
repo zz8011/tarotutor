@@ -184,3 +184,19 @@ Phase 5 (Week 3-4): P2-8 + P3-9 + P3-10 → 代码整洁
 2. 运行 `npm run lint` 确保无新警告
 3. 运行 `npm run test` 确保测试通过
 4. Git commit: `fix(gstack): <phase description>`
+
+---
+
+## 功能补全（2026-06-13 完成）
+
+上面 P0–P3 均已落地。本轮在此基础上补齐了「展示层有、数据层无」的断链功能：
+
+| 功能 | 实现 |
+|------|------|
+| 日记闭环 | 学完一张牌自动把学员复述写入 `addDiary`（同卡同天去重），DiaryPage 日历按真实日期点亮，列表展示最新 30 条与标签 |
+| 连续打卡 | `progress.lastStudyDate`（本地时区 YYYY-MM-DD，`src/utils/date.ts`）+ `markStudyActivity`，同天去重、断签归一，persist schema 升级 v2 |
+| 成就系统 | `src/data/achievements.ts` 声明式规则表（8 条）；关键动作后 `checkAchievements` 自动解锁 + toast；ProfilePage 读真实数据 |
+| 牌阵历史 | SpreadPage「历史」按钮展开已存占卜记录，可展开看完整解读 |
+| 梯度解锁 | 单张/三张 22 张解锁，关系之镜/马蹄形 40 张，凯尔特十字 78 张；首页文案同步 |
+| 快速复习 | 新增 `/review`：到期卡直接出三题测验，全对按 1→3→7→14→30 天推进，有错次日重来 |
+| 死按钮清理 | ProfilePage 假设置区改为「每日学习目标」选择，成就「查看全部」改为解锁计数 |

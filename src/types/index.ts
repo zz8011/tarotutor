@@ -11,6 +11,12 @@ export type PersonalityDimension = 'intuitive_logical' | 'supportive_independent
 export type LearningPhase = 'perception' | 'understanding' | 'application' | 'mastery';
 export type StudyStage = 'observe' | 'symbols' | 'teach' | 'scenario' | 'quiz' | 'mastered';
 export type MessageRole = 'user' | 'mentor' | 'system' | 'assistant';
+/** 牌面方向：正位 / 逆位（全局唯一定义，组件请从这里导入） */
+export type Orientation = 'upright' | 'reversed';
+/** 测验答案表：question.id -> 用户选择 */
+export type QuizAnswerMap = Record<string, string>;
+/** 掌握测试结果（注意与性格测试的 QuizResult 接口区分） */
+export type QuizOutcome = 'correct' | 'incorrect' | null;
 
 // ---- Core Domain Types ------------------------------------
 
@@ -184,6 +190,8 @@ export interface UserProgress {
   achievements: Achievement[];
   streak: number;
   longestStreak: number;
+  /** 最近一次有效学习的本地日期（YYYY-MM-DD），用于连续打卡判定 */
+  lastStudyDate: string | null;
   totalSessions: number;
   personalityType: string | null;
   primaryMentor: string | null;

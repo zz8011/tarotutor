@@ -426,34 +426,28 @@
       .title-icon { color: var(--color-primary); }
     }
 
-    .settings-list {
+    .target-pills {
       display: flex;
-      flex-direction: column;
-      gap: 1px;
+      gap: 10px;
 
-      .settings-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 14px;
+      .target-pill {
+        flex: 1;
+        padding: 12px 0;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
         background: var(--bg-elevated);
-        border: none;
         color: var(--text-secondary);
         font-size: 14px;
+        font-family: var(--font-body);
         cursor: pointer;
         transition: all 0.2s;
-        font-family: var(--font-body);
-        text-align: left;
-        width: 100%;
 
-        &:first-child { border-radius: 12px 12px 0 0; }
-        &:last-child { border-radius: 0 0 12px 12px; }
-
-        .item-icon { color: var(--text-muted); }
-
-        span { flex: 1; }
-
-        .item-arrow { color: var(--text-muted); }
+        &.active {
+          border-color: rgba(var(--color-primary-rgb), 0.6);
+          background: rgba(var(--color-primary-rgb), 0.12);
+          color: var(--color-primary);
+          font-weight: 600;
+        }
       }
     }
   }

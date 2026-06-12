@@ -10,13 +10,11 @@
 // 5. 严禁在客户端代码中引入任何 API Key 或直连 AI 服务商的 baseURL
 
 // 云函数端点配置
+// 注意：仅声明仓库中已实现的云函数（cloudfunctions/ 目录），
+// 所有对话场景统一走 tarot-chat，新增云函数时再扩展此表。
 export const CLOUD_FUNCTIONS = {
   wechat: {
     chat: 'tarot-chat',
-    streamChat: 'tarot-stream',
-    dailyCard: 'tarot-daily',
-    spread: 'tarot-spread',
-    welcome: 'tarot-welcome',
   },
   dev: {
     baseURL: import.meta.env.VITE_API_PROXY_URL || '',

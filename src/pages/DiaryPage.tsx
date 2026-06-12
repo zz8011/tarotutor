@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, BookOpen, Sparkles, Flame } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { getCardById } from '../data/tarotCards';
+import { localDateString } from '../utils/date';
 import './DiaryPage.scss';
 
 export default function DiaryPage() {
@@ -13,6 +14,12 @@ export default function DiaryPage() {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
   const monthName = `${year}年${month + 1}月`;
+
+  // 日历真实映射：把日记条目的日期（YYYY-MM-DD）收进集合，按天点亮
+  const entryDates = useMemo(
+    () => new Set(progress.diaryEntries.map((entry) => entry.date)),
+    [progress.diaryEntries]
+  );
 
   const calendarDays = useMemo(() => {
     const firstDay = new Date(year, month, 1).getDay();
@@ -31,22 +38,23 @@ export default function DiaryPage() {
       });
     }
 
-    const today = new Date();
-    const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
-    const todayDate = today.getDate();
+    const todayStr = localDateString();
 
     for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = localDateString(new Date(year, month, d));
+      const isToday = dateStr === todayStr;
       days.push({
         day: d,
         isCurrentMonth: true,
-        hasEntry: d <= progress.diaryEntries.length && d % 3 === 1,
-        isStreak: d <= progress.streak && d > progress.streak - 3 && isCurrentMonth,
-        isToday: isCurrentMonth && d === todayDate,
+        hasEntry: entryDates.has(dateStr),
+        // 火苗标记：今天已学习（lastStudyDate 命中今天）
+        isStreak: isToday && progress.lastStudyDate === todayStr,
+        isToday,
       });
     }
 
     return days;
-  }, [year, month, progress]);
+  }, [year, month, entryDates, progress.lastStudyDate]);
 
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
@@ -114,20 +122,29 @@ export default function DiaryPage() {
             </div>
           ) : (
             <div className="entries-list">
-              {progress.diaryEntries.slice(-5).reverse().map((entry, i) => {
+              {/* diaryEntries 写入时新条目在最前，直接顺序展示即为最新优先 */}
+              {progress.diaryEntries.slice(0, 30).map((entry, i) => {
                 const card = getCardById(entry.cardId);
+                const preview = entry.content?.slice(0, 60) || '无笔记';
                 return (
                   <motion.div
                     key={entry.id}
                     className="entry-card"
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
+                    transition={{ delay: Math.min(i, 8) * 0.05 }}
                   >
                     <span className="entry-symbol">{card?.imageSymbol || '🃏'}</span>
                     <div className="entry-info">
                       <h4>{card?.chineseName || '未知卡牌'}</h4>
-                      <p>{entry.content?.slice(0, 50) || '无笔记'}...</p>
+                      <p>{preview}{(entry.content?.length || 0) > 60 ? '…' : ''}</p>
+                      {entry.tags.length > 0 && (
+                        <div className="entry-tags">
+                          {entry.tags.map((tag) => (
+                            <span key={tag} className="entry-tag">{tag}</span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <span className="entry-date">
                       {entry.date}

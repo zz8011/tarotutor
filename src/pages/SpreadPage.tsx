@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, History, MoonStar, Lock } from 'lucide-react';
-import { spreads } from '../data/spreads';
-import { tarotCards, getRandomCard, getCardById, getCardImagePath } from '../data/tarotCards';
+import { Sparkles, History, MoonStar, Lock, X } from 'lucide-react';
+import { spreads, getSpreadById } from '../data/spreads';
+import { getRandomCard, getCardById, getCardImagePath } from '../data/tarotCards';
 import { resolveCardBackAsset } from '../data/assetManifest';
 import { useAppStore } from '../store/useAppStore';
 import { getSpreadInterpretation } from '../services/ai';
@@ -18,12 +18,26 @@ function getRandomOrientation(): 'upright' | 'reversed' {
   return Math.random() > 0.5 ? 'upright' : 'reversed';
 }
 
+// 梯度解锁：学满 22 张（大阿尔卡纳量级）开放入门牌阵，
+// 40 张开放进阶牌阵，78 张全部开放——比「必须学完 78 张才能玩」友好得多。
+const spreadUnlockThresholds: Record<string, number> = {
+  single: 22,
+  three_card: 22,
+  relationship_mirror: 40,
+  horseshoe: 40,
+  celtic_cross: 78,
+};
+
+function getUnlockThreshold(spreadId: string): number {
+  return spreadUnlockThresholds[spreadId] ?? 78;
+}
+
 export default function SpreadPage() {
   const navigate = useNavigate();
   const addSpread = useAppStore((state) => state.addSpread);
   const cardDeck = useAppStore((state) => state.cardDeck);
   const learnedCount = useAppStore((state) => state.progress.learnedCards.length);
-  const isSpreadUnlocked = learnedCount >= tarotCards.length;
+  const savedSpreads = useAppStore((state) => state.spreads);
 
   const [selectedSpread, setSelectedSpread] = useState(spreads[0]);
   const [drawnCards, setDrawnCards] = useState<SpreadCard[]>([]);
@@ -31,6 +45,11 @@ export default function SpreadPage() {
   const [interpretation, setInterpretation] = useState('');
   const [userQuestion, setUserQuestion] = useState('');
   const [userReflection, setUserReflection] = useState('');
+  const [showHistory, setShowHistory] = useState(false);
+  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
+
+  const selectedThreshold = getUnlockThreshold(selectedSpread.id);
+  const isSpreadUnlocked = learnedCount >= selectedThreshold;
 
   const handleDraw = () => {
     if (!isSpreadUnlocked || !userQuestion.trim() || phase === 'drawing' || phase === 'interpreting') return;
@@ -132,31 +151,96 @@ export default function SpreadPage() {
       <header className="spread-header">
         <div className="header-row">
           <h1 className="header-title">塔罗占卜</h1>
-          <button className="history-btn">
+          <button className="history-btn" onClick={() => setShowHistory((v) => !v)}>
             <History size={14} />
-            历史
+            历史{savedSpreads.length > 0 ? ` (${savedSpreads.length})` : ''}
           </button>
         </div>
         <nav className="spread-tabs">
-          {spreads.slice(0, 4).map((s) => (
-            <button
-              key={s.id}
-              className={`spread-tab ${selectedSpread.id === s.id ? 'active' : ''}`}
-              onClick={() => { setSelectedSpread(s); resetSpread(); }}
-            >
-              {s.chineseName}
-            </button>
-          ))}
+          {spreads.map((s) => {
+            const locked = learnedCount < getUnlockThreshold(s.id);
+            return (
+              <button
+                key={s.id}
+                className={`spread-tab ${selectedSpread.id === s.id ? 'active' : ''} ${locked ? 'locked' : ''}`}
+                onClick={() => { setSelectedSpread(s); resetSpread(); setShowHistory(false); }}
+              >
+                {locked && <Lock size={11} />}
+                {s.chineseName}
+              </button>
+            );
+          })}
         </nav>
       </header>
 
       <main className="spread-main">
+        <AnimatePresence>
+          {showHistory && (
+            <motion.section
+              className="history-panel glass-panel"
+              initial={{ opacity: 0, y: -12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+            >
+              <div className="history-head">
+                <h2><History size={15} /> 占卜历史</h2>
+                <button className="history-close" onClick={() => setShowHistory(false)} aria-label="关闭历史">
+                  <X size={16} />
+                </button>
+              </div>
+
+              {savedSpreads.length === 0 ? (
+                <p className="history-empty">还没有占卜记录，完成第一次占卜后会保存在这里。</p>
+              ) : (
+                <div className="history-list">
+                  {savedSpreads.map((record) => {
+                    const template = getSpreadById(record.templateId);
+                    const expanded = expandedHistoryId === record.id;
+                    return (
+                      <div key={record.id} className={`history-item ${expanded ? 'expanded' : ''}`}>
+                        <button
+                          className="history-summary"
+                          onClick={() => setExpandedHistoryId(expanded ? null : record.id)}
+                        >
+                          <div className="history-meta">
+                            <span className="history-spread-name">{template?.chineseName || '牌阵'}</span>
+                            <span className="history-date">{record.date.slice(0, 10)}</span>
+                          </div>
+                          <p className="history-question">{record.question || '（未填写问题）'}</p>
+                          <div className="history-cards">
+                            {record.positions.map((pos) => {
+                              const card = pos.cardId != null ? getCardById(pos.cardId) : null;
+                              return (
+                                <span key={pos.position} className="history-card-chip">
+                                  {card?.chineseName || '?'}{pos.orientation === 'reversed' ? '·逆' : ''}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </button>
+                        {expanded && record.interpretation && (
+                          <div className="history-interp">
+                            <AiResponse text={record.interpretation} />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </motion.section>
+          )}
+        </AnimatePresence>
+
         {!isSpreadUnlocked && (
           <div className="spread-lock glass-panel">
             <Lock size={18} />
             <div>
-              <h2>牌阵学习尚未解锁</h2>
-              <p>先把全部 78 张牌学完，牌阵占卜才会开放。你现在已经学了 {learnedCount} 张。</p>
+              <h2>「{selectedSpread.chineseName}」尚未解锁</h2>
+              <p>
+                学满 {selectedThreshold} 张牌即可开放此牌阵，你现在已经学了 {learnedCount} 张。
+                {learnedCount < 22 && ' 入门牌阵从 22 张开始解锁，加油！'}
+              </p>
             </div>
             <button onClick={() => navigate('/learn')}>继续学习</button>
           </div>

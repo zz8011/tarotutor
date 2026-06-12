@@ -1,32 +1,34 @@
 import BottomNav from '../components/BottomNav';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import {
-  Award, Scroll, CalendarCheck, Sparkles,
-  SlidersHorizontal, Moon, Bell, HelpCircle, LogOut
+  Award, Sparkles, BookOpen, Crown, Trophy, Flame, MoonStar, PenLine, Star,
+  SlidersHorizontal, Target,
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { getMentorById } from '../data/mentors';
+import { achievementRules } from '../data/achievements';
 import './ProfilePage.scss';
 
-const achievements = [
-  { icon: Scroll, name: '初识塔罗', unlocked: true },
-  { icon: CalendarCheck, name: '连续7天', unlocked: true },
-  { icon: Sparkles, name: '大阿卡纳', unlocked: true },
-  { icon: Sparkles, name: '星辰指引', unlocked: false },
-];
-
-const settingsItems = [
-  { icon: Moon, label: '深色模式' },
-  { icon: Bell, label: '提醒设置' },
-  { icon: HelpCircle, label: '使用帮助' },
-  { icon: LogOut, label: '退出登录' },
-];
+/** 成就规则表中的 icon 键 → 图标组件 */
+const achievementIcons: Record<string, LucideIcon> = {
+  sparkles: Sparkles,
+  'book-open': BookOpen,
+  crown: Crown,
+  trophy: Trophy,
+  flame: Flame,
+  'moon-star': MoonStar,
+  'pen-line': PenLine,
+  star: Star,
+};
 
 const deckOptions: { key: 'eastern' | 'chinese-ink'; label: string; desc: string }[] = [
   { key: 'eastern', label: '东方神秘', desc: '华丽神秘的东方风格' },
   { key: 'chinese-ink', label: '中国水墨', desc: '淡雅写意的水墨风格' },
 ];
+
+const studyTargets = [3, 5, 7] as const;
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -36,7 +38,12 @@ export default function ProfilePage() {
   const setUserName = useAppStore((state) => state.setUserName);
   const cardDeck = useAppStore((state) => state.cardDeck);
   const setCardDeck = useAppStore((state) => state.setCardDeck);
+  const dailyStudyTarget = useAppStore((state) => state.dailyStudyTarget);
+  const setDailyStudyTarget = useAppStore((state) => state.setDailyStudyTarget);
   const mentor = getMentorById(primaryMentor || 'luna');
+
+  // 成就：以规则表为完整列表，已解锁状态来自 store 的真实数据
+  const unlockedIds = new Set(progress.achievements.map((a) => a.id));
   const [draftName, setDraftName] = useState(userName);
   const [isEditingName, setIsEditingName] = useState(false);
 
@@ -90,9 +97,6 @@ export default function ProfilePage() {
             )}
           </div>
 
-          <button className="settings-btn">
-            <SlidersHorizontal size={18} />
-          </button>
         </div>
       </header>
 
@@ -137,19 +141,20 @@ export default function ProfilePage() {
               <Award size={16} className="title-icon" />
               成就勋章
             </h2>
-            <span className="view-all">查看全部</span>
+            <span className="view-all">{unlockedIds.size}/{achievementRules.length}</span>
           </div>
 
           <div className="badge-grid">
-            {achievements.map((ach, i) => {
-              const Icon = ach.icon;
+            {achievementRules.map((rule) => {
+              const Icon = achievementIcons[rule.icon] || Sparkles;
+              const unlocked = unlockedIds.has(rule.id);
               return (
-                <div key={i} className={`badge-item ${ach.unlocked ? 'unlocked' : 'locked'}`}>
+                <div key={rule.id} className={`badge-item ${unlocked ? 'unlocked' : 'locked'}`} title={rule.description}>
                   <div className="badge-circle">
                     <Icon size={22} />
-                    {ach.unlocked && <div className="badge-dot" />}
+                    {unlocked && <div className="badge-dot" />}
                   </div>
-                  <span className="badge-name">{ach.name}</span>
+                  <span className="badge-name">{rule.name}</span>
                 </div>
               );
             })}
@@ -180,20 +185,20 @@ export default function ProfilePage() {
 
         <section className="settings-section">
           <h2 className="section-title">
-            <SlidersHorizontal size={16} className="title-icon" />
-            个人设置
+            <Target size={16} className="title-icon" />
+            每日学习目标
           </h2>
-          <div className="settings-list">
-            {settingsItems.map((item, i) => {
-              const Icon = item.icon;
-              return (
-                <button key={i} className="settings-item">
-                  <Icon size={18} className="item-icon" />
-                  <span>{item.label}</span>
-                  <span className="item-arrow">›</span>
-                </button>
-              );
-            })}
+          <div className="target-pills" role="group" aria-label="每日学习目标">
+            {studyTargets.map((target) => (
+              <button
+                key={target}
+                type="button"
+                className={`target-pill ${dailyStudyTarget === target ? 'active' : ''}`}
+                onClick={() => setDailyStudyTarget(target)}
+              >
+                {target} 张/天
+              </button>
+            ))}
           </div>
         </section>
       </main>

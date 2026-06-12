@@ -11,6 +11,7 @@ const CardLibraryPage = lazy(() => import('./pages/CardLibraryPage'));
 const SpreadPage = lazy(() => import('./pages/SpreadPage'));
 const DiaryPage = lazy(() => import('./pages/DiaryPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const ReviewPage = lazy(() => import('./pages/ReviewPage'));
 
 function Loading() {
   return (
@@ -35,6 +36,7 @@ export default function App() {
             <Route path="/spread" element={<SpreadPage />} />
             <Route path="/diary" element={<DiaryPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/review" element={<ReviewPage />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </Suspense>

@@ -1,5 +1,6 @@
 // ===== Mystic Tarot Academy - Global Styles =====
 // Based on Superdesign AI Design System
+// 设计变量唯一来源：tokens.css（请勿在此重复定义 :root 变量）
 
 @import './tokens.css';
 
@@ -8,75 +9,6 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-}
-
-:root {
-  // ---- Colors ----
-  --bg-deep: #0f0d0a;
-  --bg-velvet: #17130e;
-  --bg-card: rgba(28, 23, 17, 0.9);
-  --bg-elevated: #1a1612;
-  --bg-input: rgba(28, 23, 17, 0.8);
-
-  --color-primary: #d4b066;
-  --color-primary-dark: #8b6e37;
-  --color-emerald: #6fae9b;
-  --color-emerald-bright: #10b981;
-  --color-rose: #a76552;
-  --color-cyan: #8dc7b5;
-
-  --text-primary: #f0f0f0;
-  --text-secondary: #c8bba5;
-  --text-muted: #948672;
-  --text-gold: #d4b066;
-
-  --border-subtle: rgba(212, 176, 102, 0.1);
-  --border-default: rgba(212, 176, 102, 0.15);
-  --border-hover: rgba(212, 176, 102, 0.3);
-  --border-active: rgba(212, 176, 102, 0.4);
-
-  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.4);
-  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.5);
-  --shadow-gold: 0 0 20px rgba(212, 176, 102, 0.4);
-  --shadow-gold-soft: 0 0 10px rgba(212, 176, 102, 0.3);
-  --shadow-emerald: 0 0 10px rgba(111, 174, 155, 0.5);
-
-  // ---- Typography ----
-  --font-display: 'Cinzel', 'Noto Serif SC', Georgia, serif;
-  --font-heading: 'Noto Serif SC', Georgia, serif;
-  --font-body: 'Noto Sans SC', PingFang SC, sans-serif;
-
-  --text-xs: 10px;
-  --text-sm: 12px;
-  --text-base: 14px;
-  --text-lg: 16px;
-  --text-xl: 18px;
-  --text-2xl: 20px;
-  --text-3xl: 24px;
-  --text-4xl: 30px;
-
-  // ---- Spacing ----
-  --space-xs: 4px;
-  --space-sm: 8px;
-  --space-md: 16px;
-  --space-lg: 24px;
-  --space-xl: 32px;
-  --space-2xl: 48px;
-
-  // ---- Radius (Superdesign spec: 6px/8px/10px) ----
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 10px;
-  --radius-xl: 16px;
-  --radius-full: 9999px;
-
-  // ---- Layout ----
-  --page-max: 480px;
-  --nav-height: 72px;
-
-  // ---- Transitions ----
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-bounce: cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 // ---- Google Fonts ----

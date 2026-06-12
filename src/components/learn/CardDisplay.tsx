@@ -1,9 +1,7 @@
 import { motion } from 'framer-motion';
 import { RotateCcw } from 'lucide-react';
 import { getCardImagePath } from '../../data/tarotCards';
-import type { TarotCard } from '../../types';
-
-export type Orientation = 'upright' | 'reversed';
+import type { Orientation, TarotCard } from '../../types';
 
 export interface CardDisplayProps {
   card: TarotCard;

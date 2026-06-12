@@ -4,6 +4,7 @@ import { Sparkles, BookOpen, Star, Compass, User, MoonStar, WandSparkles } from 
 import BottomNav from '../components/BottomNav';
 import { useAppStore } from '../store/useAppStore';
 import { tarotCards, getCardById, getCardImagePath } from '../data/tarotCards';
+import { countDueReviews } from '../services/learning/lessonContent';
 import { resolveCardBackAsset } from '../data/assetManifest';
 import { useMagicParticles } from '../hooks/useMagicParticles';
 import { useFireflies } from '../hooks/useFireflies';
@@ -47,14 +48,13 @@ export default function HomePage() {
   const learnedCount = progress.learnedCards.length;
   const totalCards = tarotCards.length;
   const learnProgress = Math.round((learnedCount / totalCards) * 100);
-  const isSpreadUnlocked = learnedCount >= totalCards;
+  // 与 SpreadPage 的梯度解锁保持一致：学满 22 张即可进入入门牌阵
+  const SPREAD_ENTRY_THRESHOLD = 22;
+  const isSpreadUnlocked = learnedCount >= SPREAD_ENTRY_THRESHOLD;
   const studyTargets = [3, 5, 7] as const;
 
   const activeCard = studyJournal.activeCardId != null ? getCardById(studyJournal.activeCardId) : null;
-  const dueReviewCount = Object.values(studyJournal.records).filter((record) => {
-    if (!record.nextReviewAt) return false;
-    return new Date(record.nextReviewAt).getTime() <= Date.now();
-  }).length;
+  const dueReviewCount = countDueReviews(studyJournal.records);
 
   const quickActions = [
     { icon: Compass, label: '性格测试', path: '/quiz', desc: '发现你的灵魂导师' },
@@ -64,7 +64,9 @@ export default function HomePage() {
       icon: Star,
       label: '牌阵占卜',
       path: '/spread',
-      desc: isSpreadUnlocked ? '探索命运的指引方向' : `学完全部牌后解锁（剩余 ${totalCards - learnedCount} 张）`,
+      desc: isSpreadUnlocked
+        ? '探索命运的指引方向'
+        : `学满 ${SPREAD_ENTRY_THRESHOLD} 张解锁入门牌阵（还差 ${SPREAD_ENTRY_THRESHOLD - learnedCount} 张）`,
       disabled: !isSpreadUnlocked,
     },
   ];
@@ -174,16 +176,24 @@ export default function HomePage() {
                 <p className="study-dock-text">
                   {activeCard
                     ? `当前阶段：${studyStageLabel[studyJournal.activeStage] || '学习中'} · 待复习 ${dueReviewCount} 张`
-                    : `每天按自己的节奏学 ${dailyStudyTarget} 张，学完的牌会自动进入复习节奏。`}
+                    : dueReviewCount > 0
+                      ? `有 ${dueReviewCount} 张牌到期待复习，先巩固再学新的。`
+                      : `每天按自己的节奏学 ${dailyStudyTarget} 张，学完的牌会自动进入复习节奏。`}
                 </p>
             </div>
             <div className="study-dock-actions">
               <button type="button" className="study-dock-btn primary" onClick={() => navigate(activeCard ? `/learn/${activeCard.id}` : '/library')}>
                 {activeCard ? '继续学习' : '去牌库开始'}
               </button>
-              <button type="button" className="study-dock-btn secondary" onClick={() => navigate('/library')}>
-                打开牌库
-              </button>
+              {dueReviewCount > 0 ? (
+                <button type="button" className="study-dock-btn secondary" onClick={() => navigate('/review')}>
+                  复习 {dueReviewCount} 张
+                </button>
+              ) : (
+                <button type="button" className="study-dock-btn secondary" onClick={() => navigate('/library')}>
+                  打开牌库
+                </button>
+              )}
             </div>
           </div>
         </section>
@@ -226,7 +236,7 @@ export default function HomePage() {
           <div className="plan-card glass-dark">
             <div className="plan-copy">
               <span className="plan-label">学习计划</span>
-              <p>每天按自己的节奏学一组，学完全部 78 张后再进入牌阵。</p>
+              <p>每天按自己的节奏学一组，学满 22 张解锁入门牌阵，78 张全部开放。</p>
             </div>
             <div className="plan-pills" role="group" aria-label="每日学习计划">
               {studyTargets.map((target) => (

@@ -65,6 +65,21 @@ export function mockResponse(messages: { role: string; content: string }[]): str
  * 发送聊天补全请求到 AI 模型
  * 强制通过云函数/代理调用，客户端不再直连任何 AI 服务商
  */
+/**
+ * 无代理时的策略：
+ * - 开发/测试环境：降级到 mockResponse，保证本地无 Key 也能跑通完整流程
+ * - 生产环境：抛错，避免静默使用假数据掩盖配置问题
+ */
+function resolveNoProxyFallback(messages: AiMessage[]): string {
+  if (import.meta.env.DEV) {
+    console.warn('[AI Service] 未配置 API 代理地址，开发环境降级为 mock 响应。设置 VITE_API_PROXY_URL 可连接真实模型。');
+    return sanitizeAiText(mockResponse(messages));
+  }
+  throw new Error(
+    '[AI Service] 未配置 API 代理地址。请在 .env.local 中设置 VITE_API_PROXY_URL，或确保在微信小程序环境中运行。'
+  );
+}
+
 export async function chatCompletion(
   messages: AiMessage[],
   options: {
@@ -77,9 +92,7 @@ export async function chatCompletion(
   const { temperature = 0.7, maxTokens = 2048 } = options;
 
   if (!isWechat && !proxyBaseURL) {
-    throw new Error(
-      '[AI Service] 未配置 API 代理地址。请在 .env.local 中设置 VITE_API_PROXY_URL，或确保在微信小程序环境中运行。'
-    );
+    return resolveNoProxyFallback(messages);
   }
 
   return callCloudProxy('tarot-chat', messages, { temperature, maxTokens });
@@ -98,14 +111,12 @@ export async function* streamChatCompletion(
   } = {}
 ): AsyncGenerator<string, void, unknown> {
   const { temperature = 0.7, maxTokens = 2048 } = options;
-  if (!isWechat && !proxyBaseURL) {
-    throw new Error(
-      '[AI Service] 未配置 API 代理地址。请在 .env.local 中设置 VITE_API_PROXY_URL，或确保在微信小程序环境中运行。'
-    );
-  }
 
   // 当前云函数代理暂不支持流式，退化为非流式后分段 yield
-  const fullText = await callCloudProxy('tarot-chat', messages, { temperature, maxTokens });
+  const fullText =
+    !isWechat && !proxyBaseURL
+      ? resolveNoProxyFallback(messages)
+      : await callCloudProxy('tarot-chat', messages, { temperature, maxTokens });
   const chunks = fullText.split(/(?<=。)|(?<=！)|(?<=？)|(?<=\n)/);
   for (const chunk of chunks) {
     if (chunk) {

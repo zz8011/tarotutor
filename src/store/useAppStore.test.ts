@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useAppStore } from './useAppStore';
+import { localDateString, localDateStringOffset } from '../utils/date';
 
 function getState() {
   return useAppStore.getState();
@@ -16,6 +17,7 @@ function resetStore() {
       achievements: [],
       streak: 0,
       longestStreak: 0,
+      lastStudyDate: null,
       totalSessions: 0,
       personalityType: null,
       primaryMentor: null,
@@ -124,5 +126,82 @@ describe('useAppStore 状态管理', () => {
   it('setCurrentView 应更新当前视图', () => {
     getState().setCurrentView('learn');
     expect(getState().currentView).toBe('learn');
+  });
+});
+
+describe('连续打卡 markStudyActivity', () => {
+  beforeEach(() => {
+    resetStore();
+  });
+
+  it('首次打卡 streak 应为 1', () => {
+    getState().markStudyActivity();
+    const { progress } = getState();
+    expect(progress.streak).toBe(1);
+    expect(progress.longestStreak).toBe(1);
+    expect(progress.lastStudyDate).toBe(localDateString());
+  });
+
+  it('同一天重复打卡不应叠加', () => {
+    getState().markStudyActivity();
+    getState().markStudyActivity();
+    expect(getState().progress.streak).toBe(1);
+  });
+
+  it('昨天打过卡，今天打卡 streak +1', () => {
+    useAppStore.setState((state) => ({
+      progress: { ...state.progress, streak: 3, longestStreak: 5, lastStudyDate: localDateStringOffset(1) },
+    }));
+    getState().markStudyActivity();
+    const { progress } = getState();
+    expect(progress.streak).toBe(4);
+    expect(progress.longestStreak).toBe(5);
+  });
+
+  it('断签后 streak 重置为 1，longestStreak 保留', () => {
+    useAppStore.setState((state) => ({
+      progress: { ...state.progress, streak: 7, longestStreak: 7, lastStudyDate: localDateStringOffset(3) },
+    }));
+    getState().markStudyActivity();
+    const { progress } = getState();
+    expect(progress.streak).toBe(1);
+    expect(progress.longestStreak).toBe(7);
+  });
+});
+
+describe('成就系统 checkAchievements', () => {
+  beforeEach(() => {
+    resetStore();
+  });
+
+  const unlockedIds = () => getState().progress.achievements.map((a) => a.id);
+
+  it('学完第一张牌应解锁 first-card', () => {
+    getState().completeCard(0);
+    expect(unlockedIds()).toContain('first-card');
+  });
+
+  it('未达条件时不应解锁后续成就', () => {
+    getState().completeCard(0);
+    expect(unlockedIds()).not.toContain('major-arcana');
+  });
+
+  it('写第一篇日记应解锁 first-diary', () => {
+    getState().addDiary({
+      id: 'd-1',
+      date: new Date().toISOString(),
+      cardId: 0,
+      content: '今天学了愚者',
+      mood: 'happy',
+      tags: ['学习'],
+    });
+    expect(unlockedIds()).toContain('first-diary');
+  });
+
+  it('成就不应重复解锁', () => {
+    getState().completeCard(0);
+    getState().completeCard(1);
+    const count = unlockedIds().filter((id) => id === 'first-card').length;
+    expect(count).toBe(1);
   });
 });

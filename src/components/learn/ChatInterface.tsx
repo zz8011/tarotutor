@@ -1,39 +1,41 @@
-import { useRef } from 'react';
+import type { ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { MessageCircle, Send, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import AiResponse from '../AiResponse';
-import type { ChatMessage, StudyStage } from '../../types';
+import ReflectionInput from './ReflectionInput';
+import type { ChatMessage } from '../../types';
 
 export interface ChatInterfaceProps {
   messages: ChatMessage[];
-  stage: StudyStage;
-  isStreaming: boolean;
-  awaitingRecap: boolean;
-  composerValue: string;
-  composerPlaceholder: string;
-  composerDisabled: boolean;
-  sendDisabled: boolean;
   mentorName: string;
   mentorAvatar?: string;
+  composerValue: string;
+  composerPlaceholder: string;
+  composerDisabled?: boolean;
+  sendDisabled?: boolean;
+  /** 渲染在消息流之后（如测验面板、滚动锚点） */
+  children?: ReactNode;
+  /** 渲染在输入框之后（如掌握后的操作按钮） */
+  footer?: ReactNode;
   onComposerChange: (value: string) => void;
   onSend: () => void;
 }
 
 export default function ChatInterface({
   messages,
-  composerValue,
-  composerPlaceholder,
-  composerDisabled,
-  sendDisabled,
   mentorName,
   mentorAvatar,
+  composerValue,
+  composerPlaceholder,
+  composerDisabled = false,
+  sendDisabled = false,
+  children,
+  footer,
   onComposerChange,
   onSend,
 }: ChatInterfaceProps) {
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
   return (
-    <div className="chat-shell">
+    <section className="chat-shell">
       <div className="mentor-header">
         <div className="mentor-avatar">
           {mentorAvatar ? <img src={mentorAvatar} alt={mentorName} /> : <Sparkles size={18} />}
@@ -58,28 +60,19 @@ export default function ChatInterface({
             </motion.div>
           ))}
         </AnimatePresence>
-        <div ref={chatEndRef} />
+        {children}
       </div>
 
-      <div className="chat-composer">
-        <MessageCircle size={16} className="composer-icon" />
-        <textarea
-          value={composerValue}
-          onChange={(e) => onComposerChange(e.target.value)}
-          placeholder={composerPlaceholder}
-          rows={2}
-          disabled={composerDisabled}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              onSend();
-            }
-          }}
-        />
-        <button className="send-btn" onClick={onSend} disabled={sendDisabled} aria-label="发送">
-          <Send size={18} />
-        </button>
-      </div>
-    </div>
+      <ReflectionInput
+        value={composerValue}
+        placeholder={composerPlaceholder}
+        disabled={composerDisabled}
+        sendDisabled={sendDisabled}
+        onChange={onComposerChange}
+        onSend={onSend}
+      />
+
+      {footer}
+    </section>
   );
 }

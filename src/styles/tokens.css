@@ -32,13 +32,13 @@
   --accent-cyan: #8dc7b5;
 
   /* Text colors */
-  --text-primary: #f4ead8;
+  --text-primary: #f0f0f0;
   --text-secondary: #c8bba5;
   --text-muted: #948672;
-  --text-gold: #d8b66d;
+  --text-gold: #d4b066;
 
   /* Border colors */
-  --border-subtle: rgba(212, 176, 102, 0.2);
+  --border-subtle: rgba(212, 176, 102, 0.1);
   --border-glow: rgba(141, 199, 181, 0.36);
   --border-default: rgba(212, 176, 102, 0.15);
   --border-hover: rgba(212, 176, 102, 0.3);

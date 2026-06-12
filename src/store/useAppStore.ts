@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { sanitizeAiText } from '../utils/aiText';
+import { localDateString, localDateStringOffset } from '../utils/date';
+import { achievementRules } from '../data/achievements';
+import { showToast } from '../platform/feedback';
 import type {
   UserProgress,
   LearningSession,
@@ -26,6 +29,10 @@ interface AppState {
   completeCard: (cardId: number) => void;
   addDiary: (diary: DiaryEntry) => void;
   unlockAchievement: (achievement: Achievement) => void;
+  /** 记录一次有效学习行为：按本地日期更新连续打卡（同一天只计一次） */
+  markStudyActivity: () => void;
+  /** 评估成就规则表，解锁新达成的成就并弹出提示 */
+  checkAchievements: () => void;
 
   currentSession: LearningSession | null;
   startSession: (cardId: number, mentorId: string) => void;
@@ -77,6 +84,7 @@ const defaultProgress: UserProgress = {
   achievements: [],
   streak: 0,
   longestStreak: 0,
+  lastStudyDate: null,
   totalSessions: 0,
   personalityType: null,
   primaryMentor: null,
@@ -147,7 +155,7 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           progress: { ...state.progress, ...updates, lastActiveAt: new Date().toISOString() },
         })),
-      completeCard: (cardId: number) =>
+      completeCard: (cardId: number) => {
         set((state) => ({
           progress: {
             ...state.progress,
@@ -156,15 +164,20 @@ export const useAppStore = create<AppState>()(
               : [...state.progress.learnedCards, cardId],
             lastActiveAt: new Date().toISOString(),
           },
-        })),
-      addDiary: (diary) =>
+        }));
+        // 学完一张牌算一次有效学习；markStudyActivity 内部会再触发成就检查
+        get().markStudyActivity();
+      },
+      addDiary: (diary) => {
         set((state) => ({
           progress: {
             ...state.progress,
             diaryEntries: [diary, ...state.progress.diaryEntries],
             lastActiveAt: new Date().toISOString(),
           },
-        })),
+        }));
+        get().checkAchievements();
+      },
       unlockAchievement: (achievement) =>
         set((state) => ({
           progress: {
@@ -175,6 +188,54 @@ export const useAppStore = create<AppState>()(
             lastActiveAt: new Date().toISOString(),
           },
         })),
+      markStudyActivity: () => {
+        const today = localDateString();
+        const { lastStudyDate } = get().progress;
+
+        // 同一天内的重复学习不重复计数
+        if (lastStudyDate !== today) {
+          const yesterday = localDateStringOffset(1);
+          set((state) => {
+            const streak = state.progress.lastStudyDate === yesterday ? state.progress.streak + 1 : 1;
+            return {
+              progress: {
+                ...state.progress,
+                streak,
+                longestStreak: Math.max(streak, state.progress.longestStreak),
+                lastStudyDate: today,
+                lastActiveAt: new Date().toISOString(),
+              },
+            };
+          });
+        }
+        get().checkAchievements();
+      },
+      checkAchievements: () => {
+        const state = get();
+        const context = { progress: state.progress, spreadsCount: state.spreads.length };
+        const newlyUnlocked = achievementRules.filter(
+          (rule) => !state.progress.achievements.some((a) => a.id === rule.id) && rule.check(context)
+        );
+        if (!newlyUnlocked.length) return;
+
+        set((current) => ({
+          progress: {
+            ...current.progress,
+            achievements: [
+              ...current.progress.achievements,
+              ...newlyUnlocked.map((rule) => ({
+                id: rule.id,
+                name: rule.name,
+                description: rule.description,
+                icon: rule.icon,
+                unlocked: true,
+                unlockedAt: new Date().toISOString(),
+              })),
+            ],
+          },
+        }));
+        newlyUnlocked.forEach((rule) => showToast(`🏆 解锁成就：${rule.name}`));
+      },
 
       currentSession: null,
       startSession: (cardId, mentorId) => {
@@ -308,7 +369,10 @@ export const useAppStore = create<AppState>()(
       setPrimaryMentor: (mentorId) => set({ primaryMentor: mentorId }),
 
       spreads: [],
-      addSpread: (spread) => set((state) => ({ spreads: [spread, ...state.spreads] })),
+      addSpread: (spread) => {
+        set((state) => ({ spreads: [spread, ...state.spreads] }));
+        get().checkAchievements();
+      },
 
       currentView: 'home',
       setCurrentView: (view) => set({ currentView: view }),
@@ -320,14 +384,21 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'tarot-tutor-storage',
-      version: 1, // schema 版本，变更时递增以触发迁移
+      version: 2, // schema 版本，变更时递增以触发迁移
       storage: appStorage,
       migrate: (persistedState: unknown, version: number) => {
+        const state = persistedState as Record<string, unknown>;
         // 版本 0 -> 1: 添加 cardDeck 字段默认值
         if (version < 1) {
-          const state = persistedState as Record<string, unknown>;
           if (!state.cardDeck) {
             state.cardDeck = 'eastern';
+          }
+        }
+        // 版本 1 -> 2: progress 增加 lastStudyDate（连续打卡判定基准）
+        if (version < 2) {
+          const progress = state.progress as Record<string, unknown> | undefined;
+          if (progress && progress.lastStudyDate === undefined) {
+            progress.lastStudyDate = null;
           }
         }
         return persistedState as AppState;

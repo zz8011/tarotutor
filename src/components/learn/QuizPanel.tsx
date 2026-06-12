@@ -1,19 +1,13 @@
 import { BookOpen, CircleCheckBig, WandSparkles } from 'lucide-react';
-import type { QuizAnswerMap } from '../../pages/LearnPage';
+import type { QuizAnswerMap, QuizOutcome } from '../../types';
+import type { ChoiceQuestion } from '../../services/learning/lessonContent';
 
-export interface ChoiceQuestion {
-  id: string;
-  label: string;
-  prompt: string;
-  options: string[];
-  correctAnswer: string;
-  explanation: string;
-}
+export type { ChoiceQuestion };
 
 export interface QuizPanelProps {
   questions: ChoiceQuestion[];
   answers: QuizAnswerMap;
-  quizResult: 'correct' | 'incorrect' | null;
+  quizResult: QuizOutcome;
   choiceQuizPassed: boolean;
   allChoicesAnswered: boolean;
   correctChoiceCount: number;

@@ -25,6 +25,22 @@ export { chatCompletion, streamChatCompletion, mockResponse } from './stream';
 // 便捷封装方法
 // ============================================================
 
+type PromptMessages = ReturnType<typeof buildCardLearningPrompt>;
+
+/**
+ * 将导师人格注入 system prompt（安全拼接，处理无双换行的情况）。
+ * 流式与非流式入口共用，避免两份相同逻辑漂移。
+ */
+function applyMentorSystemPrompt(messages: PromptMessages, mentorId?: string): PromptMessages {
+  if (!mentorId) return messages;
+  const systemPrompt = buildSystemPrompt(mentorId);
+  const originalContent = messages[0].content;
+  const parts = originalContent.split('\n\n');
+  const restContent = parts.length > 1 ? parts.slice(1).join('\n\n') : originalContent;
+  messages[0].content = systemPrompt + '\n\n' + restContent;
+  return messages;
+}
+
 /**
  * 获取卡牌学习回复（非流式）
  */
@@ -36,15 +52,10 @@ export async function getCardLearningResponse(
   mentorId?: string,
   cardDeck: TarotDeck = 'eastern'
 ): Promise<string> {
-  const messages = buildCardLearningPrompt(card, orientation, userMessage, chatHistory, cardDeck);
-  // 如果有导师，替换 system prompt（安全拼接，处理无双换行的情况）
-  if (mentorId) {
-    const systemPrompt = buildSystemPrompt(mentorId);
-    const originalContent = messages[0].content;
-    const parts = originalContent.split('\n\n');
-    const restContent = parts.length > 1 ? parts.slice(1).join('\n\n') : originalContent;
-    messages[0].content = systemPrompt + '\n\n' + restContent;
-  }
+  const messages = applyMentorSystemPrompt(
+    buildCardLearningPrompt(card, orientation, userMessage, chatHistory, cardDeck),
+    mentorId
+  );
   return chatCompletion(messages, { temperature: 0.8, maxTokens: 800 });
 }
 
@@ -59,15 +70,10 @@ export async function* streamCardLearningResponse(
   mentorId?: string,
   cardDeck: TarotDeck = 'eastern'
 ): AsyncGenerator<string, void, unknown> {
-  const messages = buildCardLearningPrompt(card, orientation, userMessage, chatHistory, cardDeck);
-  // 如果有导师，替换 system prompt（安全拼接，处理无双换行的情况）
-  if (mentorId) {
-    const systemPrompt = buildSystemPrompt(mentorId);
-    const originalContent = messages[0].content;
-    const parts = originalContent.split('\n\n');
-    const restContent = parts.length > 1 ? parts.slice(1).join('\n\n') : originalContent;
-    messages[0].content = systemPrompt + '\n\n' + restContent;
-  }
+  const messages = applyMentorSystemPrompt(
+    buildCardLearningPrompt(card, orientation, userMessage, chatHistory, cardDeck),
+    mentorId
+  );
   yield* streamChatCompletion(messages, { temperature: 0.8, maxTokens: 800 });
 }
 

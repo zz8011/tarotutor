@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:proxy": "node scripts/dev-ai-proxy.mjs",
     "build": "tsc -b && vite build",
     "build:tencent": "node scripts/generate-cos-manifest.mjs && tsc -b && vite build",
     "lint": "eslint .",
