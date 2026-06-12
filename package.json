@@ -14,6 +14,7 @@
     "cos:upload": "powershell -ExecutionPolicy Bypass -File scripts/upload-cos-assets.ps1",
     "oss:upload": "powershell -ExecutionPolicy Bypass -File scripts/upload-oss-assets.ps1",
     "deploy:tencent": "powershell -ExecutionPolicy Bypass -File deploy/deploy-tencent.ps1",
+    "deploy:tencent:sh": "bash deploy/deploy-tencent.sh",
     "test": "vitest run",
     "test:watch": "vitest"
   },
