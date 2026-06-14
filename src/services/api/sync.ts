@@ -3,6 +3,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { recordsApi, sessionsApi, diaryApi, achievementsApi, divinationsApi, dailyApi } from './data';
 import { apiFetch } from './client';
+import { me as authMe } from './auth';
 
 const isLoggedIn = () => !!useAuthStore.getState().user;
 const quiet = (p: Promise<unknown>) => p.catch((e: unknown) => console.warn('[sync]', e instanceof Error ? e.message : String(e)));
@@ -20,6 +21,8 @@ export async function bootstrapFromServer(): Promise<void> {
       dailyApi.get(),
       sessionsApi.current(),
     ]);
+    const meRes = await authMe();
+    const u = meRes.user;
     const s = useAppStore.getState();
     const p = progressRes.progress;
     const records = (recordsRes.records as Array<Record<string, unknown>>).reduce((acc, r) => {
@@ -27,6 +30,11 @@ export async function bootstrapFromServer(): Promise<void> {
     }, {} as Record<string, unknown>);
     const d = dailyRes.daily as Record<string, unknown> | null;
     useAppStore.setState({
+      userName: u.nickname ?? s.userName,
+      dailyStudyTarget: (u.daily_study_target as 3 | 5 | 7) ?? s.dailyStudyTarget,
+      cardDeck: (u.card_deck as 'eastern' | 'chinese-ink') ?? s.cardDeck,
+      personalityType: u.personality_type ?? s.personalityType,
+      primaryMentor: u.primary_mentor ?? s.primaryMentor,
       progress: {
         ...s.progress,
         currentPhase: (p?.current_phase as typeof s.progress.currentPhase) ?? s.progress.currentPhase,
