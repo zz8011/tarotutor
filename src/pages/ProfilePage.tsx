@@ -7,6 +7,7 @@ import {
   SlidersHorizontal, Target,
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { getMentorById } from '../data/mentors';
 import { achievementRules } from '../data/achievements';
 import './ProfilePage.scss';
@@ -45,6 +46,9 @@ export default function ProfilePage() {
   // 成就：以规则表为完整列表，已解锁状态来自 store 的真实数据
   const unlockedIds = new Set(progress.achievements.map((a) => a.id));
   const [draftName, setDraftName] = useState(userName);
+  const [showMenu, setShowMenu] = useState(false);
+  const logout = useAuthStore((s) => s.logout);
+  const handleLogout = () => { logout(); navigate("/auth"); };
   const [isEditingName, setIsEditingName] = useState(false);
 
   const handleSaveName = () => {
@@ -64,13 +68,19 @@ export default function ProfilePage() {
         <div className="deco-blob emerald" />
 
         <div className="user-row">
-          <div className="avatar-wrapper">
+          <div className="avatar-wrapper" onClick={() => setShowMenu((v) => !v)} style={{ cursor: 'pointer', position: 'relative' }}>
             <div className="avatar-circle">
               <span className="avatar-letter">{userName ? userName[0].toUpperCase() : '?'}</span>
             </div>
             <div className="avatar-badge">
               <Sparkles size={10} />
             </div>
+            {showMenu && (
+              <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 8, background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #ccc)', borderRadius: 10, padding: 6, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 20, minWidth: 120 }}>
+                <div style={{ padding: '4px 12px', fontSize: 12, color: 'var(--text-muted, #999)', borderBottom: '1px solid var(--border, #eee)', marginBottom: 4 }}>账户</div>
+                <button onClick={handleLogout} style={{ width: '100%', background: 'none', border: 'none', padding: '8px 12px', textAlign: 'left', cursor: 'pointer', color: 'crimson', fontSize: 14, borderRadius: 6 }}>退出登录</button>
+              </div>
+            )}
           </div>
 
           <div className="user-info">
