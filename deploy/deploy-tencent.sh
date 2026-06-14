@@ -50,6 +50,7 @@ die() {
 
 ssh_cmd() {
   if [[ -n "$SSH_HOST_ALIAS" ]]; then
+    # shellcheck disable=SC2029
     ssh "$SSH_HOST_ALIAS" "$@"
   else
     ssh -i "$KEY_PATH" -p "$SSH_PORT" "${USER}@${SERVER_HOST}" "$@"
