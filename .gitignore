@@ -32,3 +32,8 @@ browser-test-*.css
 src/**/*.css.map
 .env.local
 dist.tar.gz
+
+# server
+server/node_modules/
+server/.env
+server/dist/
