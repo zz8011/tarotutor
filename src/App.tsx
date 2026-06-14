@@ -1,6 +1,7 @@
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { lazy, Suspense } from 'react';
+import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { lazy, Suspense, useEffect, type ReactNode } from 'react';
 import ErrorBoundary from './components/ErrorBoundary';
+import { useAuthStore } from './store/useAuthStore';
 import './styles/global.scss';
 
 const AuthPage = lazy(() => import('./pages/AuthPage'));
@@ -23,22 +24,34 @@ function Loading() {
   );
 }
 
+// 路由保护：未登录（且非游客模式）重定向 /auth
+function Private({ children }: { children: ReactNode }) {
+  const { user, initialized } = useAuthStore();
+  const loc = useLocation();
+  if (!initialized) return <Loading />;
+  if (!user) return <Navigate to="/auth" replace state={{ from: loc.pathname }} />;
+  return <>{children}</>;
+}
+
 export default function App() {
+  const bootstrap = useAuthStore((s) => s.bootstrap);
+  useEffect(() => { void bootstrap(); }, [bootstrap]);
+
   return (
     <HashRouter>
       <ErrorBoundary>
         <Suspense fallback={<Loading />}>
           <Routes>
             <Route path="/auth" element={<AuthPage />} />
-            <Route path="/" element={<HomePage />} />
-            <Route path="/quiz" element={<QuizPage />} />
-            <Route path="/mentors" element={<MentorSelectPage />} />
-            <Route path="/learn/:cardId?" element={<LearnPage />} />
-            <Route path="/library" element={<CardLibraryPage />} />
-            <Route path="/spread" element={<SpreadPage />} />
-            <Route path="/diary" element={<DiaryPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/review" element={<ReviewPage />} />
+            <Route path="/" element={<Private><HomePage /></Private>} />
+            <Route path="/quiz" element={<Private><QuizPage /></Private>} />
+            <Route path="/mentors" element={<Private><MentorSelectPage /></Private>} />
+            <Route path="/learn/:cardId?" element={<Private><LearnPage /></Private>} />
+            <Route path="/library" element={<Private><CardLibraryPage /></Private>} />
+            <Route path="/spread" element={<Private><SpreadPage /></Private>} />
+            <Route path="/diary" element={<Private><DiaryPage /></Private>} />
+            <Route path="/profile" element={<Private><ProfilePage /></Private>} />
+            <Route path="/review" element={<Private><ReviewPage /></Private>} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </Suspense>
