@@ -7,6 +7,9 @@ import { sessionRoutes } from '../domain/session/routes.js';
 import { recordRoutes } from '../domain/record/routes.js';
 import { diaryRoutes } from '../domain/diary/routes.js';
 import { achievementRoutes } from '../domain/achievement/routes.js';
+import { divinationRoutes } from '../domain/divination/routes.js';
+import { dailyRoutes } from '../domain/daily/routes.js';
+import { mentorRoutes } from '../domain/mentor/routes.js';
 import { runMigrations } from '../infra/migrate.js';
 
 const app = Fastify({ logger: true });
@@ -18,6 +21,9 @@ await app.register(sessionRoutes);
 await app.register(recordRoutes);
 await app.register(diaryRoutes);
 await app.register(achievementRoutes);
+await app.register(divinationRoutes);
+await app.register(dailyRoutes);
+await app.register(mentorRoutes);
 
 try { await runMigrations(); }
 catch (err) { app.log.error({ err }, 'migration 失败'); process.exit(1); }
