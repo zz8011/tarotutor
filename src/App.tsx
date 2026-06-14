@@ -3,6 +3,7 @@ import { lazy, Suspense } from 'react';
 import ErrorBoundary from './components/ErrorBoundary';
 import './styles/global.scss';
 
+const AuthPage = lazy(() => import('./pages/AuthPage'));
 const HomePage = lazy(() => import('./pages/HomePage'));
 const QuizPage = lazy(() => import('./pages/QuizPage'));
 const MentorSelectPage = lazy(() => import('./pages/MentorSelectPage'));
@@ -28,6 +29,7 @@ export default function App() {
       <ErrorBoundary>
         <Suspense fallback={<Loading />}>
           <Routes>
+            <Route path="/auth" element={<AuthPage />} />
             <Route path="/" element={<HomePage />} />
             <Route path="/quiz" element={<QuizPage />} />
             <Route path="/mentors" element={<MentorSelectPage />} />
