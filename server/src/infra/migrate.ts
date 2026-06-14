@@ -5,7 +5,7 @@ import { pool } from './db.js';
 
 export async function runMigrations(): Promise<void> {
   const dir = join(process.cwd(), 'migrations');
-  let files: string[] = [];
+  let files: string[];
   try { files = readdirSync(dir).filter(f => f.endsWith('.sql')).sort(); }
   catch { console.log('无 migrations 目录，跳过'); return; }
 
