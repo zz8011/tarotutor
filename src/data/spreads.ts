@@ -206,31 +206,3 @@ export const spreads: SpreadTemplate[] = [
 export function getSpreadById(id: string): SpreadTemplate | undefined {
   return spreads.find((s) => s.id === id);
 }
-
-/**
- * Find a spread by its Chinese name.
- */
-export function getSpreadByChineseName(chineseName: string): SpreadTemplate | undefined {
-  return spreads.find((s) => s.chineseName === chineseName);
-}
-
-/**
- * Get all spreads that use exactly `count` cards.
- */
-export function getSpreadsByCardCount(count: number): SpreadTemplate[] {
-  return spreads.filter((s) => s.cardCount === count);
-}
-
-/**
- * Get all spread ids.
- */
-export function getAllSpreadIds(): string[] {
-  return spreads.map((s) => s.id);
-}
-
-/**
- * Get the total number of available spreads.
- */
-export function getSpreadCount(): number {
-  return spreads.length;
-}

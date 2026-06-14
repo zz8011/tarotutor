@@ -28,8 +28,8 @@ PACKAGE_PATH="$PROJECT_ROOT/dist.tar.gz"
 ENV_FILE="$PROJECT_ROOT/.env.tencent.local"
 
 if [[ -f "$ENV_FILE" ]]; then
-  # shellcheck disable=SC1090
   set -a
+  # shellcheck disable=SC1090
   source "$ENV_FILE"
   set +a
 fi

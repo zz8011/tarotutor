@@ -7,14 +7,6 @@ import { resolveMentorAsset } from './assetManifest';
 
 // Re-export for backward compatibility
 export { type MentorFull };
-
-export interface MentorColorTheme {
-  primary: string;
-  secondary: string;
-  bg: string;
-  text: string;
-}
-
 // ---- Mentor Data --------------------------------------------
 
 export const mentors: MentorFull[] = [

@@ -7,7 +7,7 @@ export interface TarotDeckGuide {
   interpretationRule: string;
 }
 
-export const tarotDeckGuides: Record<TarotDeck, TarotDeckGuide> = {
+const tarotDeckGuides: Record<TarotDeck, TarotDeckGuide> = {
   eastern: {
     id: 'eastern',
     label: '东方秘语塔罗',

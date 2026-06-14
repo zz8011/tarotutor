@@ -48,7 +48,7 @@ ${mentor.personality || '温暖、富有洞察力'}
 /**
  * 构建牌组上下文
  */
-export function buildDeckPromptContext(deck: TarotDeck): string {
+function buildDeckPromptContext(deck: TarotDeck): string {
   const guide = getTarotDeckGuide(deck);
   return [
     `当前牌组：${guide.label} (${deck})`,
@@ -59,7 +59,7 @@ export function buildDeckPromptContext(deck: TarotDeck): string {
   ].join('\n');
 }
 
-export function buildCardVisualContext(card: TarotCard): string {
+function buildCardVisualContext(card: TarotCard): string {
   return [
     `通用图像参考（仅作辅助，不可与当前牌组冲突时硬套）：${card.description}`,
     `图像符号：${card.imageSymbol}`,

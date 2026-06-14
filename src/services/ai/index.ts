@@ -10,15 +10,7 @@ import {
 import { chatCompletion, streamChatCompletion } from './stream';
 
 export * from './types';
-export { CLOUD_FUNCTIONS, proxyBaseURL } from './config';
-export { isWechat, callCloudProxy } from './client';
-export {
-  buildSystemPrompt,
-  buildCardLearningPrompt,
-  buildSpreadInterpretationPrompt,
-  buildDailyCardPrompt,
-  buildWelcomePrompt,
-} from './prompts';
+export { buildSystemPrompt } from './prompts';
 export { chatCompletion, streamChatCompletion, mockResponse } from './stream';
 
 // ============================================================

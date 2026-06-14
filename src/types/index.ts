@@ -4,13 +4,13 @@
 
 // ---- String Literal Types (enums cause too many type issues) ----
 
-export type Arcana = 'major' | 'minor';
-export type Suit = 'wands' | 'cups' | 'swords' | 'pentacles';
-export type Element = 'fire' | 'water' | 'air' | 'earth';
-export type PersonalityDimension = 'intuitive_logical' | 'supportive_independent' | 'free_systematic' | 'lively_contemplative';
+type Arcana = 'major' | 'minor';
+type Suit = 'wands' | 'cups' | 'swords' | 'pentacles';
+type Element = 'fire' | 'water' | 'air' | 'earth';
+type PersonalityDimension = 'intuitive_logical' | 'supportive_independent' | 'free_systematic' | 'lively_contemplative';
 export type LearningPhase = 'perception' | 'understanding' | 'application' | 'mastery';
 export type StudyStage = 'observe' | 'symbols' | 'teach' | 'scenario' | 'quiz' | 'mastered';
-export type MessageRole = 'user' | 'mentor' | 'system' | 'assistant';
+type MessageRole = 'user' | 'mentor' | 'system' | 'assistant';
 /** 牌面方向：正位 / 逆位（全局唯一定义，组件请从这里导入） */
 export type Orientation = 'upright' | 'reversed';
 /** 测验答案表：question.id -> 用户选择 */
@@ -200,7 +200,7 @@ export interface UserProgress {
   lastActiveAt: string;
 }
 
-export interface SpreadPosition {
+interface SpreadPosition {
   position: number;
   name: string;
   meaning: string;
@@ -232,17 +232,6 @@ export interface CardSpread {
   cards?: SpreadCard[];
   interpretation: string;
 }
-
-export interface CourseModule {
-  id: string;
-  title: string;
-  description: string;
-  phase: LearningPhase;
-  cards: number[];
-  estimatedMinutes: number;
-  completed: boolean;
-}
-
 export interface SpreadCard {
   cardId: number;
   position: number;

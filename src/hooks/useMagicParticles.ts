@@ -49,5 +49,3 @@ export function useMagicParticles(options: ParticleOptions = {}) {
     };
   }, [createParticles]);
 }
-
-export default useMagicParticles;

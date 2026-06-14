@@ -167,7 +167,7 @@ export function buildChoiceQuiz(card: TarotCard, orientation: Orientation): Choi
   ];
 }
 
-export function sanitizeUserInput(input: string): string {
+function sanitizeUserInput(input: string): string {
   // 移除潜在的 prompt 注入标记
   return input
     .replace(/\[\/system\]/gi, '')

@@ -6,7 +6,7 @@
 
 import type { UserProgress } from '../types';
 
-export interface AchievementContext {
+interface AchievementContext {
   progress: UserProgress;
   /** 已保存的牌阵占卜次数 */
   spreadsCount: number;
@@ -83,7 +83,3 @@ export const achievementRules: AchievementRule[] = [
     check: ({ spreadsCount }) => spreadsCount >= 1,
   },
 ];
-
-export function getAchievementRuleById(id: string): AchievementRule | undefined {
-  return achievementRules.find((rule) => rule.id === id);
-}

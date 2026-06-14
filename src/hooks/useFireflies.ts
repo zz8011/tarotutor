@@ -26,5 +26,3 @@ export function useFireflies(options: FireflyOptions = {}) {
 
   return { fireflies, color };
 }
-
-export default useFireflies;
